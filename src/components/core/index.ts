@@ -1,5 +1,5 @@
 export * from './preloader';
-export * from './navigation';
+export * from './floating-app-bar';
 export * from './footer';
 export * from './page-transition';
 export * from './smooth-scroll';

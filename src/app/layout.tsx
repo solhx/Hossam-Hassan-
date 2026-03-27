@@ -7,7 +7,7 @@ import { CursorProvider } from '@/components/core/cursor/cursor-provider';
 import { CursorFollower } from '@/components/core/cursor/cursor-follower';
 import { SmoothScroll } from '@/components/core/smooth-scroll';
 import { NoiseOverlay } from '@/components/core/noise-overlay';
-import { Navigation } from '@/components/core/navigation';
+import  Navigation  from '@/components/core/floating-app-bar';
 import { Footer } from '@/components/core/footer';
 import { ChatWidget } from '@/components/chat';
 import './globals.css';
