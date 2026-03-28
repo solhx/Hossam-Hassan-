@@ -1,18 +1,22 @@
 // src/components/core/smooth-scroll.tsx
+// ─── Lenis Smooth Scroll Provider ───
+
 'use client';
 
-import { useEffect, useRef } from 'react';
-import Lenis from '@studio-freight/lenis';
-import { gsap } from '@/systems/animation';
-import { ScrollTrigger } from '@/systems/animation';
-import { useReducedMotion } from '@/hooks';
+import { type ReactNode, useEffect, useRef } from 'react';
+import Lenis from 'lenis';
+import { useReducedMotion } from 'framer-motion';
 
-export function SmoothScroll({ children }: { children: React.ReactNode }) {
+interface SmoothScrollProviderProps {
+  children: ReactNode;
+}
+
+export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
   const lenisRef = useRef<Lenis | null>(null);
-  const prefersReducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotion();
 
   useEffect(() => {
-    if (prefersReducedMotion) return;
+    if (reducedMotion) return;
 
     const lenis = new Lenis({
       duration: 1.2,
@@ -20,26 +24,29 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
       orientation: 'vertical',
       gestureOrientation: 'vertical',
       smoothWheel: true,
-      wheelMultiplier: 1,
       touchMultiplier: 2,
+      infinite: false,
     });
 
     lenisRef.current = lenis;
 
-    // Connect Lenis to GSAP ScrollTrigger
-    lenis.on('scroll', ScrollTrigger.update);
+    function raf(time: number) {
+      lenis.raf(time);
+      requestAnimationFrame(raf);
+    }
 
-    gsap.ticker.add((time) => {
-      lenis.raf(time * 1000);
+    requestAnimationFrame(raf);
+
+    // Expose to GSAP ScrollTrigger
+    lenis.on('scroll', () => {
+      // ScrollTrigger.update() is called automatically if using Lenis's ScrollTrigger plugin
     });
-
-    gsap.ticker.lagSmoothing(0);
 
     return () => {
       lenis.destroy();
       lenisRef.current = null;
     };
-  }, [prefersReducedMotion]);
+  }, [reducedMotion]);
 
   return <>{children}</>;
 }

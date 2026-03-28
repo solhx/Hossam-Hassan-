@@ -1,114 +1,61 @@
-// src/hooks/useMagnetic.ts
 'use client';
+// src/hooks/useMagnetic.ts
+// ─── Low-level magnetic effect hook ───
 
-import { useRef, useState, useEffect, useCallback } from 'react';
-import { gsap } from 'gsap';
-import { useReducedMotion } from './useReducedMotion';
 
-interface MagneticOptions {
+import { useRef, useCallback, type RefObject } from 'react';
+import { useMotionValue, useSpring } from 'framer-motion';
+
+interface UseMagneticOptions {
   strength?: number;
-  ease?: number;
-  distance?: number;
+  radius?: number;
+  springConfig?: { stiffness: number; damping: number; mass?: number };
 }
 
-interface MagneticReturn<T extends HTMLElement = HTMLElement> {
-  ref: React.RefObject<T | null>;
-  x: number;
-  y: number;
-  isHovered: boolean;
-  handleMouseMove: (e: React.MouseEvent<T>) => void;
-  handleMouseLeave: () => void;
-}
-
-export function useMagnetic<T extends HTMLElement = HTMLElement>(
-  options?: MagneticOptions
-): MagneticReturn<T> {
+export function useMagnetic<T extends HTMLElement = HTMLDivElement>(
+  options: UseMagneticOptions = {}
+): {
+  ref: RefObject<T | null>;
+  x: ReturnType<typeof useSpring>;
+  y: ReturnType<typeof useSpring>;
+  onMouseMove: (e: React.MouseEvent) => void;
+  onMouseLeave: () => void;
+} {
   const {
-    strength = 0.3,
-    ease = 0.15,
-    distance = 100,
-  } = options || {};
+    strength = 0.35,
+    radius = 200,
+    springConfig = { stiffness: 350, damping: 25, mass: 0.5 },
+  } = options;
 
-  const ref = useRef<T | null>(null);
-  const [isHovered, setIsHovered] = useState(false);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const prefersReducedMotion = useReducedMotion();
+  const ref = useRef<T>(null);
+  const rawX = useMotionValue(0);
+  const rawY = useMotionValue(0);
+  const x = useSpring(rawX, springConfig);
+  const y = useSpring(rawY, springConfig);
 
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent<T>) => {
-      if (!ref.current || prefersReducedMotion) return;
-
-      const el = ref.current;
-      const rect = el.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
-
-      const distX = e.clientX - centerX;
-      const distY = e.clientY - centerY;
-      const dist = Math.sqrt(distX * distX + distY * distY);
-
-      if (dist < distance + rect.width / 2) {
-        const moveX = distX * strength;
-        const moveY = distY * strength;
-
-        setPosition({ x: moveX, y: moveY });
-        setIsHovered(true);
-
-        gsap.to(el, {
-          x: moveX,
-          y: moveY,
-          duration: ease,
-          ease: 'power3.out',
-        });
-      }
-    },
-    [strength, ease, distance, prefersReducedMotion]
-  );
-
-  const handleMouseLeave = useCallback(() => {
-    if (!ref.current) return;
-
-    setIsHovered(false);
-    setPosition({ x: 0, y: 0 });
-
-    gsap.to(ref.current, {
-      x: 0,
-      y: 0,
-      duration: 0.6,
-      ease: 'elastic.out(1, 0.3)',
-    });
-  }, []);
-
-  useEffect(() => {
-    if (prefersReducedMotion) return;
-
-    const handleGlobalMouseMove = (e: MouseEvent) => {
+  const onMouseMove = useCallback(
+    (e: React.MouseEvent) => {
       if (!ref.current) return;
-
       const rect = ref.current.getBoundingClientRect();
       const centerX = rect.left + rect.width / 2;
       const centerY = rect.top + rect.height / 2;
       const distX = e.clientX - centerX;
       const distY = e.clientY - centerY;
-      const dist = Math.sqrt(distX * distX + distY * distY);
+      const distance = Math.sqrt(distX * distX + distY * distY);
 
-      if (dist > distance + rect.width / 2 + 50) {
-        if (isHovered) {
-          handleMouseLeave();
-        }
+      if (distance < radius) {
+        const factor = 1 - distance / radius;
+        rawX.set(distX * strength * factor);
+        rawY.set(distY * strength * factor);
       }
-    };
+    },
+    [strength, radius, rawX, rawY]
+  );
 
-    window.addEventListener('mousemove', handleGlobalMouseMove);
-    return () => window.removeEventListener('mousemove', handleGlobalMouseMove);
-  }, [distance, isHovered, handleMouseLeave, prefersReducedMotion]);
+  const onMouseLeave = useCallback(() => {
+    rawX.set(0);
+    rawY.set(0);
+  }, [rawX, rawY]);
 
-  return {
-    ref,
-    x: position.x,
-    y: position.y,
-    isHovered,
-    handleMouseMove,
-    handleMouseLeave,
-  };
+  return { ref, x, y, onMouseMove, onMouseLeave };
 }

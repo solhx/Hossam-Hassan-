@@ -1,128 +1,88 @@
-// src/components/sections/home/expertise-section.tsx
 'use client';
 
-import React, { useRef, useState, useEffect } from 'react';
-import { gsap, gsapEase, duration as dur } from '@/systems/animation';
-import { motion, AnimatePresence } from 'framer-motion';
-import { SectionHeading } from '@/components/ui/section-heading';
+// src/components/sections/home/expertise-section.tsx
+
+
+// ─── Skills & Expertise with animated cards ───
+
+import { memo } from 'react';
+import { motion } from 'framer-motion';
+import * as presets from '@/systems/animation/presets';
+import { MotionWrapper } from '@/components/ui/motion-wrapper';
 import { GlassCard } from '@/components/ui/glass-card';
-import { useCursorState, useReducedMotion } from '@/hooks';
-import { transitions } from '../../../systems/animation/motion-variants';
-import {  motionEase } from '../../../systems/animation/easing';
+import { portfolioData } from '@/lib/portfolio-data';
+import { cn } from '@/utils/cn';
 
-
-interface SkillCategory {
-  id: string;
-  title: string;
+interface Skill {
+  name: string;
   icon: string;
-  description: string;
-  skills: { name: string; level: number }[];
-  color: string;
+  category: string;
+  proficiency: number; // 0-100
 }
 
-const skillCategories: SkillCategory[] = [
+const skillCategories = [
   {
-    id: 'frontend',
     title: 'Frontend',
-    icon: '◆',
-    description:
-      'Building responsive, performant, and accessible user interfaces with modern frameworks.',
+    description: 'Building beautiful, responsive user interfaces',
+    accent: 'from-green-400 to-emerald-500',
     skills: [
-      { name: 'React / Next.js', level: 95 },
-      { name: 'TypeScript', level: 90 },
-      { name: 'Tailwind CSS', level: 95 },
-      { name: 'GSAP / Framer Motion', level: 88 },
-      { name: 'Three.js', level: 70 },
+      { name: 'React', proficiency: 95 },
+      { name: 'Next.js', proficiency: 92 },
+      { name: 'TypeScript', proficiency: 90 },
+      { name: 'Tailwind CSS', proficiency: 95 },
+      { name: 'Framer Motion', proficiency: 85 },
+      { name: 'Three.js', proficiency: 75 },
     ],
-    color: '#748ffc',
   },
   {
-    id: 'backend',
     title: 'Backend',
-    icon: '◇',
-    description:
-      'Designing scalable server architectures, APIs, and database solutions.',
+    description: 'Scalable server-side architecture & APIs',
+    accent: 'from-green-500 to-teal-500',
     skills: [
-      { name: 'Node.js / Express', level: 90 },
-      { name: 'MongoDB / Mongoose', level: 88 },
-      { name: 'REST API Design', level: 92 },
-      { name: 'Authentication / JWT', level: 85 },
-      { name: 'WebSockets', level: 78 },
+      { name: 'Node.js', proficiency: 90 },
+      { name: 'Express.js', proficiency: 88 },
+      { name: 'MongoDB', proficiency: 85 },
+      { name: 'REST APIs', proficiency: 92 },
+      { name: 'GraphQL', proficiency: 70 },
+      { name: 'PostgreSQL', proficiency: 72 },
     ],
-    color: '#63e6be',
   },
   {
-    id: 'tools',
     title: 'Tools & DevOps',
-    icon: '○',
-    description:
-      'Streamlining development workflow with modern tooling and deployment strategies.',
+    description: 'Modern development workflow & deployment',
+    accent: 'from-emerald-400 to-green-600',
     skills: [
-      { name: 'Git / GitHub', level: 92 },
-      { name: 'Vercel / Netlify', level: 88 },
-      { name: 'Docker', level: 65 },
-      { name: 'Figma / Design', level: 80 },
-      { name: 'CI/CD', level: 72 },
+      { name: 'Git', proficiency: 92 },
+      { name: 'Docker', proficiency: 75 },
+      { name: 'Vercel', proficiency: 90 },
+      { name: 'CI/CD', proficiency: 78 },
+      { name: 'Figma', proficiency: 80 },
+      { name: 'Linux', proficiency: 72 },
     ],
-    color: '#ffa94d',
   },
 ];
 
-function SkillBar({
-  name,
-  level,
-  color,
-  index,
-  isActive,
-}: {
-  name: string;
-  level: number;
-  color: string;
-  index: number;
-  isActive: boolean;
-}) {
-  const barRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!barRef.current || !isActive) return;
-
-    gsap.fromTo(
-      barRef.current,
-      { scaleX: 0 },
-      {
-        scaleX: level / 100,
-        duration: dur.slow,
-        delay: index * 0.1,
-        ease: gsapEase.cinematic,
-        transformOrigin: 'left center',
-      }
-    );
-  }, [isActive, level, index]);
-
+function SkillBar({ name, proficiency }: { name: string; proficiency: number }) {
   return (
     <div className="group">
-      <div className="mb-2 flex items-center justify-between">
-        <span className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
+      <div className="mb-1.5 flex items-center justify-between">
+        <span className="text-body-sm font-medium text-[var(--fg-primary)] transition-colors group-hover:text-[var(--fg-accent)]">
           {name}
         </span>
-        <span
-          className="font-mono text-xs tabular-nums"
-          style={{ color: 'var(--color-text-tertiary)' }}
-        >
-          {level}%
+        <span className="font-mono text-caption text-[var(--fg-muted)]">
+          {proficiency}%
         </span>
       </div>
-      <div
-        className="h-1 w-full overflow-hidden rounded-full"
-        style={{ backgroundColor: 'var(--color-border)' }}
-      >
-        <div
-          ref={barRef}
-          className="h-full rounded-full"
-          style={{
-            backgroundColor: color,
-            transform: 'scaleX(0)',
-            transformOrigin: 'left center',
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--border-subtle)]">
+        <motion.div
+          className="h-full rounded-full bg-gradient-to-r from-green-500 to-green-400"
+          initial={{ width: 0 }}
+          whileInView={{ width: `${proficiency}%` }}
+          viewport={{ once: true, margin: '-50px' }}
+          transition={{
+            duration: 1,
+            ease: presets.easings.snappy,
+            delay: 0.2,
           }}
         />
       </div>
@@ -130,177 +90,97 @@ function SkillBar({
   );
 }
 
-export function ExpertiseSection() {
-  const sectionRef = useRef<HTMLElement>(null);
-  const [activeCategory, setActiveCategory] = useState<string>('frontend');
-  const { cursorHandlers } = useCursorState();
-  const prefersReducedMotion = useReducedMotion();
-
-  const activeData = skillCategories.find((c) => c.id === activeCategory)!;
-
-  useEffect(() => {
-    if (!sectionRef.current || prefersReducedMotion) return;
-
-    const ctx = gsap.context(() => {
-      // Category tabs stagger in
-      gsap.from('.category-tab', {
-        y: 40,
-        opacity: 0,
-        duration: dur.medium,
-        stagger: 0.1,
-        ease: gsapEase.smooth,
-        scrollTrigger: {
-          trigger: '.category-tabs',
-          start: 'top 80%',
-          toggleActions: 'play none none none',
-        },
-      });
-    }, sectionRef);
-
-    return () => ctx.revert();
-  }, [prefersReducedMotion]);
-
+const ExpertiseSectionComponent = () => {
   return (
-    <section ref={sectionRef} id="expertise" className="section-padding relative">
-      {/* Large background text */}
-      <div
-        className="pointer-events-none absolute right-0 top-1/4 -translate-y-1/2 text-[15vw] font-bold leading-none opacity-[0.02]"
-        style={{ fontFamily: 'var(--font-display)' }}
-      >
-        SKILLS
-      </div>
+    <section
+      id="expertise"
+      className="section-container"
+      aria-labelledby="expertise-heading"
+    >
+      {/* Section header */}
+      <MotionWrapper preset="slideUp" className="mb-16 text-center">
+        <span className="mb-4 inline-block font-mono text-body-sm font-medium uppercase tracking-wider text-[var(--fg-accent)]">
+          {'// Expertise'}
+        </span>
+        <h2 id="expertise-heading" className="text-display-xl font-bold tracking-tight">
+          Skills &{' '}
+          <span className="gradient-green-text">Technologies</span>
+        </h2>
+        <p className="mx-auto mt-4 max-w-xl text-body-lg text-[var(--fg-secondary)]">
+          3+ years of crafting production-ready applications with modern technologies.
+        </p>
+      </MotionWrapper>
 
-      <div className="container-main relative z-10">
-        <SectionHeading
-          overline="// 02 — Expertise"
-          title="What I Master"
-          description="3+ years of building production applications across the full MEARN stack."
-        />
-
-        <div className="mt-16 grid gap-12 lg:grid-cols-[1fr_1.5fr]">
-          {/* Category Tabs */}
-          <div className="category-tabs space-y-4">
-            {skillCategories.map((category) => (
-              <motion.button
-                key={category.id}
-                className={`category-tab group flex w-full items-start gap-4 rounded-2xl p-6 text-left transition-all duration-300 ${
-                  activeCategory === category.id ? 'glass' : ''
-                }`}
-                onClick={() => setActiveCategory(category.id)}
-                whileHover={{ x: 8 }}
-                transition={transitions.snappy}
-                {...cursorHandlers('hover')}
-                style={{
-                  borderColor:
-                    activeCategory === category.id
-                      ? category.color
-                      : 'transparent',
-                  borderWidth: '1px',
-                  borderStyle: 'solid',
-                }}
-              >
-                {/* Icon */}
-                <span
-                  className="mt-1 text-2xl"
-                  style={{
-                    color:
-                      activeCategory === category.id
-                        ? category.color
-                        : 'var(--color-text-tertiary)',
-                  }}
-                >
-                  {category.icon}
-                </span>
-
-                <div>
-                  <h3
-                    className="mb-1 text-xl font-semibold"
-                    style={{
-                      fontFamily: 'var(--font-display)',
-                      color:
-                        activeCategory === category.id
-                          ? 'var(--color-text-primary)'
-                          : 'var(--color-text-secondary)',
-                    }}
-                  >
-                    {category.title}
-                  </h3>
-                  <p
-                    className="text-sm leading-relaxed"
-                    style={{ color: 'var(--color-text-tertiary)' }}
-                  >
-                    {category.description}
-                  </p>
-                </div>
-
-                {/* Active indicator */}
-                {activeCategory === category.id && (
-                  <motion.div
-                    layoutId="activeSkillCategory"
-                    className="absolute right-4 top-1/2 h-2 w-2 -translate-y-1/2 rounded-full"
-                    style={{ backgroundColor: category.color }}
-                    transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                  />
-                )}
-              </motion.button>
-            ))}
-          </div>
-
-          {/* Skill Detail Panel */}
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeCategory}
-              initial={{ opacity: 0, y: 20, filter: 'blur(10px)' }}
-              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-              exit={{ opacity: 0, y: -20, filter: 'blur(10px)' }}
-              transition={{
-                duration: 0.5,
-                ease: motionEase.smooth,
-              }}
+      {/* Skill category cards */}
+      <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+        {skillCategories.map((category, categoryIndex) => (
+          <MotionWrapper
+            key={category.title}
+            preset="slideUp"
+            delay={categoryIndex * 0.15}
+          >
+            <GlassCard
+              className="group h-full"
+              hover="lift"
+              glow
             >
-              <GlassCard className="p-8 md:p-10">
-                {/* Header */}
-                <div className="mb-8 flex items-center gap-4">
-                  <div
-                    className="flex h-12 w-12 items-center justify-center rounded-xl text-xl"
-                    style={{
-                      backgroundColor: `${activeData.color}15`,
-                      color: activeData.color,
-                    }}
-                  >
-                    {activeData.icon}
-                  </div>
-                  <div>
-                    <h3
-                      className="text-2xl font-bold"
-                      style={{ fontFamily: 'var(--font-display)' }}
-                    >
-                      {activeData.title}
-                    </h3>
-                    <p className="text-sm" style={{ color: 'var(--color-text-tertiary)' }}>
-                      {activeData.skills.length} core technologies
-                    </p>
-                  </div>
+              {/* Card header */}
+              <div className="mb-6">
+                <div
+                  className={cn(
+                    'mb-3 inline-flex h-10 w-10 items-center justify-center rounded-card-sm bg-gradient-to-br',
+                    category.accent
+                  )}
+                >
+                  <span className="text-lg font-bold text-white">
+                    {category.title.charAt(0)}
+                  </span>
                 </div>
+                <h3 className="text-heading-md font-semibold text-[var(--fg-primary)]">
+                  {category.title}
+                </h3>
+                <p className="mt-1 text-body-sm text-[var(--fg-muted)]">
+                  {category.description}
+                </p>
+              </div>
 
-                {/* Skill Bars */}
-                <div className="space-y-6">
-                  {activeData.skills.map((skill, i) => (
-                    <SkillBar
-                      key={`${activeCategory}-${skill.name}`}
-                      name={skill.name}
-                      level={skill.level}
-                      color={activeData.color}
-                      index={i}
-                      isActive={true}
-                    />
-                  ))}
-                </div>
-              </GlassCard>
-            </motion.div>
-          </AnimatePresence>
-        </div>
+              {/* Skill bars */}
+              <div className="space-y-4">
+                {category.skills.map((skill) => (
+                  <SkillBar
+                    key={skill.name}
+                    name={skill.name}
+                    proficiency={skill.proficiency}
+                  />
+                ))}
+              </div>
+            </GlassCard>
+          </MotionWrapper>
+        ))}
       </div>
+
+      {/* Years of experience highlight */}
+      <MotionWrapper preset="scaleIn" delay={0.6} className="mt-16">
+        <div className="flex flex-wrap items-center justify-center gap-8 rounded-card border border-[var(--border-accent)] bg-[var(--bg-elevated)] px-8 py-6 backdrop-blur-md md:gap-16">
+          {[
+            { value: '3+', label: 'Years Experience' },
+            { value: '30+', label: 'Projects Delivered' },
+            { value: '15+', label: 'Happy Clients' },
+            { value: '99%', label: 'Code Quality' },
+          ].map((stat) => (
+            <div key={stat.label} className="text-center">
+              <div className="text-display-md font-bold gradient-green-text">
+                {stat.value}
+              </div>
+              <div className="text-body-sm text-[var(--fg-muted)]">
+                {stat.label}
+              </div>
+            </div>
+          ))}
+        </div>
+      </MotionWrapper>
     </section>
   );
-}
+};
+
+export const ExpertiseSection = memo(ExpertiseSectionComponent);

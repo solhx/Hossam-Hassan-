@@ -1,74 +1,146 @@
-// src/components/ui/glass-card.tsx
 'use client';
+// src/components/ui/glass-card.tsx
+// ─── Premium Glass Morphism Card ───
 
-import React, { useRef } from 'react';
-import { motion } from 'framer-motion';
-import { cardHover } from '@/systems/animation/motion-variants';
-import { useCursorState } from '@/hooks/useCursorState';
 
-interface GlassCardProps {
-  children: React.ReactNode;
-  className?: string;
-  cursorLabel?: string;
-  enableTilt?: boolean;
+import {
+  type ReactNode,
+  type HTMLAttributes,
+  forwardRef,
+  useState,
+  useRef,
+  useCallback,
+} from 'react';
+import { motion, type MotionProps } from 'framer-motion';
+import { cn } from '@/utils/cn';
+
+type HoverEffect = 'lift' | 'scale' | 'glow' | 'tilt' | 'none';
+
+interface GlassCardProps extends Omit<HTMLAttributes<HTMLDivElement>, 'onAnimationStart' | 'onDrag' | 'onDragEnd' | 'onDragStart'> {
+  children: ReactNode;
+  hover?: HoverEffect;
+  glow?: boolean;
+  tilt?: boolean;
+  padding?: 'none' | 'sm' | 'md' | 'lg';
 }
 
-export function GlassCard({
-  children,
-  className = '',
-  cursorLabel,
-  enableTilt = true,
-}: GlassCardProps) {
-  const cardRef = useRef<HTMLDivElement>(null);
-  const { setCursor, resetCursor } = useCursorState();
+const paddingMap = {
+  none: '',
+  sm: 'p-4',
+  md: 'p-6 md:p-8',
+  lg: 'p-8 md:p-10',
+} as const;
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!enableTilt || !cardRef.current) return;
+export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
+  function GlassCard(
+    {
+      children,
+      hover = 'none',
+      glow = false,
+      tilt = false,
+      padding = 'md',
+      className,
+      onMouseEnter,
+      onMouseLeave,
+      onMouseMove,
+      ...props
+    },
+    ref
+  ) {
+    const internalRef = useRef<HTMLDivElement>(null);
+    const cardRef = (ref as React.RefObject<HTMLDivElement>) ?? internalRef;
+    const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5 });
+    const [isHovered, setIsHovered] = useState(false);
 
-    const rect = cardRef.current.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width - 0.5;
-    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    const handleMouseMove = useCallback(
+      (e: React.MouseEvent<HTMLDivElement>) => {
+        onMouseMove?.(e);
+        if (!cardRef.current) return;
 
-    cardRef.current.style.transform = `
-      perspective(1000px) 
-      rotateY(${x * 8}deg) 
-      rotateX(${-y * 8}deg) 
-      scale3d(1.02, 1.02, 1.02)
-    `;
-  };
+        const rect = cardRef.current.getBoundingClientRect();
+        const x = (e.clientX - rect.left) / rect.width;
+        const y = (e.clientY - rect.top) / rect.height;
+        setMousePos({ x, y });
+      },
+      [cardRef, onMouseMove]
+    );
 
-  // ✅ Fix: Single onMouseLeave that handles both tilt reset AND cursor reset
-  const handleMouseLeave = () => {
-    if (cardRef.current) {
-      cardRef.current.style.transform =
-        'perspective(1000px) rotateY(0deg) rotateX(0deg) scale3d(1, 1, 1)';
+    const handleMouseEnter = useCallback(
+      (e: React.MouseEvent<HTMLDivElement>) => {
+        onMouseEnter?.(e);
+        setIsHovered(true);
+      },
+      [onMouseEnter]
+    );
+
+    const handleMouseLeave = useCallback(
+      (e: React.MouseEvent<HTMLDivElement>) => {
+        onMouseLeave?.(e);
+        setIsHovered(false);
+        setMousePos({ x: 0.5, y: 0.5 });
+      },
+      [onMouseLeave]
+    );
+
+    // Compute hover transforms
+    const hoverProps: MotionProps = {};
+    switch (hover) {
+      case 'lift':
+        hoverProps.whileHover = { y: -6, transition: { type: 'spring', stiffness: 300, damping: 20 } };
+        break;
+      case 'scale':
+        hoverProps.whileHover = { scale: 1.02, transition: { type: 'spring', stiffness: 400, damping: 25 } };
+        break;
+      case 'glow':
+        // Handled via CSS
+        break;
+      case 'tilt':
+        // Could implement 3D tilt with transform
+        break;
     }
-    resetCursor();
-  };
 
-  const handleMouseEnter = () => {
-    setCursor(cursorLabel ? 'project' : 'hover', cursorLabel);
-  };
+    // Tilt transform
+    const tiltX = tilt ? (mousePos.y - 0.5) * -8 : 0;
+    const tiltY = tilt ? (mousePos.x - 0.5) * 8 : 0;
 
-  return (
-    <motion.div
-      ref={cardRef}
-      className={`glass transition-transform duration-500 ease-out ${className}`}
-      variants={cardHover}
-      initial="rest"
-      whileHover="hover"
-      onMouseMove={handleMouseMove}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
-      <div
-        className="pointer-events-none absolute inset-0 rounded-[inherit] opacity-0 transition-opacity duration-500 hover:opacity-100"
-        style={{
-          background:
-            'radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(var(--color-accent-rgb), 0.06), transparent 40%)',
-        }}
-      />
-      <div className="relative z-10">{children}</div>
-    </motion.div>
-  );
-}
+    return (
+      <motion.div
+        ref={cardRef}
+        className={cn(
+          'glass relative overflow-hidden rounded-card transition-[border-color,box-shadow] duration-500',
+          paddingMap[padding],
+          hover === 'glow' && isHovered && 'glow-green',
+          className
+        )}
+        style={
+          tilt
+            ? {
+                transform: `perspective(800px) rotateX(${tiltX}deg) rotateY(${tiltY}deg)`,
+                transition: 'transform 0.15s ease-out',
+              }
+            : undefined
+        }
+        onMouseMove={handleMouseMove}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        {...hoverProps}
+        {...(props as any)}
+      >
+        {/* Gradient spotlight following cursor */}
+        {glow && isHovered && (
+          <div
+            className="pointer-events-none absolute inset-0 z-0 opacity-0 transition-opacity duration-500"
+            style={{
+              opacity: isHovered ? 1 : 0,
+              background: `radial-gradient(600px circle at ${mousePos.x * 100}% ${mousePos.y * 100}%, var(--glow-primary), transparent 50%)`,
+            }}
+            aria-hidden="true"
+          />
+        )}
+
+        {/* Content */}
+        <div className="relative z-10">{children}</div>
+      </motion.div>
+    );
+  }
+);

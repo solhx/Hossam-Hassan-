@@ -1,138 +1,224 @@
+
 // src/app/api/chat/route.ts
-import OpenAI from 'openai';
-import { portfolioData } from '@/lib/portfolio-data';
+// ─── AI Chat API with rate limiting, error handling, streaming ───
 
-const openai = new OpenAI({
-  baseURL: 'https://openrouter.ai/api/v1',
-  apiKey: process.env.OPENROUTER_API_KEY,
-});
+import { NextRequest, NextResponse } from 'next/server';
+import { chatMessageSchema } from '@/validation/contact-us-schema';
 
-const SYSTEM_PROMPT = `You are ${portfolioData.name}'s AI portfolio assistant on his personal website. You help visitors learn about his skills, experience, and projects.
+// ─── Rate Limiting (In-memory for Edge) ───
+const rateLimit = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_MAX = 20;           // requests per window
+const RATE_LIMIT_WINDOW = 60_000;    // 1 minute
 
-RULES:
-- Be friendly, professional, and concise
-- Answer in the SAME LANGUAGE the user writes in (Arabic or English)
-- If the user writes in Egyptian Arabic, respond in Egyptian Arabic
-- Only answer questions related to the portfolio, skills, experience, projects, and contact info
-- If someone asks something completely unrelated, politely redirect them
-- Keep responses under 120 words unless the user asks for detail
-- If asked about availability, mention he is available for work
-- If asked how to contact, provide WhatsApp and email
-- Do NOT make up information not in the portfolio data below
-- You can use emoji sparingly
-
-PORTFOLIO DATA:
-- Name: ${portfolioData.name}
-- Role: ${portfolioData.role}
-- Experience: ${portfolioData.experience}
-- Email: ${portfolioData.email}
-- Phone: ${portfolioData.phone}
-- Tech Stack: ${portfolioData.stack?.join(', ')}
-- Projects: ${portfolioData.projects}
-- Experience Timeline: ${portfolioData.detailedExperience?.join(' → ')}
-- Social Links: ${portfolioData.socials?.map(s => `${s.platform}: ${s.link}`).join(', ')}
-- Education: ${portfolioData.education?.join(', ') || 'Web Development Diploma from Route Egypt Academy'}
-
-ARABIC CONTEXT:
-- If user says "اهلا" or "مرحبا", greet them warmly in Arabic
-- Use Egyptian dialect when responding in Arabic
-- Keep tech terms in English even in Arabic responses`;
-
-// ─── Rate limiter ───
-const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
-
-function isRateLimited(ip: string): boolean {
+function checkRateLimit(ip: string): boolean {
   const now = Date.now();
-  const limit = rateLimitMap.get(ip);
-  if (!limit || now > limit.resetTime) {
-    rateLimitMap.set(ip, { count: 1, resetTime: now + 60000 });
+  const entry = rateLimit.get(ip);
+
+  if (!entry || now > entry.resetAt) {
+    rateLimit.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW });
+    return true;
+  }
+
+  if (entry.count >= RATE_LIMIT_MAX) {
     return false;
   }
-  limit.count++;
-  return limit.count > 20;
+
+  entry.count++;
+  return true;
 }
 
-export async function POST(req: Request) {
-  const encoder = new TextEncoder();
-
-  function errorStream(message: string) {
-    const stream = new ReadableStream({
-      start(controller) {
-        controller.enqueue(encoder.encode(message));
-        controller.close();
-      },
-    });
-    return new Response(stream, {
-      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-    });
-  }
-
-  try {
-    if (!process.env.OPENROUTER_API_KEY) {
-      console.error('❌ OPENROUTER_API_KEY is not set');
-      return errorStream('⚠️ Chat is not configured. Please add OPENROUTER_API_KEY to .env.local');
+// Cleanup stale entries periodically
+if (typeof setInterval !== 'undefined') {
+  setInterval(() => {
+    const now = Date.now();
+    for (const [key, value] of rateLimit.entries()) {
+      if (now > value.resetAt) {
+        rateLimit.delete(key);
+      }
     }
+  }, 60_000);
+}
 
-    const { messages } = await req.json();
+// ─── System Prompt ───
+const SYSTEM_PROMPT = `You are Hossam Hassan's AI assistant on his portfolio website. You represent Hossam professionally and helpfully.
 
-    if (!messages || !Array.isArray(messages) || messages.length === 0) {
-      return errorStream('No messages provided.');
-    }
+About Hossam:
+- Full Stack MERN Developer with 3+ years of experience
+- Expert in React, Next.js, TypeScript, Node.js, MongoDB, Express.js
+- Skilled in Tailwind CSS, Framer Motion, Three.js, GSAP
+- Passionate about performance optimization, clean code, and great UX
+- Available for freelance work and full-time opportunities
 
-    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
-    if (isRateLimited(ip)) {
-      return errorStream('⏳ Too many messages. Please wait a moment.');
-    }
+Guidelines:
+- Be professional, friendly, and concise
+- If asked about pricing, suggest contacting Hossam directly
+- If asked irrelevant questions, politely redirect to portfolio topics
+- Never share personal information beyond what's on the portfolio
+- Respond in the same language as the user's message
+- Keep responses under 200 words unless more detail is specifically requested`;
 
-    // Filter out welcome messages
-    const filtered = messages.filter(
-      (m: { content: string }) =>
-        m.content !== "👋 Hi! I'm Hossam's AI assistant. Ask me about his skills, projects, or experience!" &&
-        m.content !== 'Hello, How can i help you ?',
-    );
+// ─── OpenAI Handler ───
+async function handleOpenAI(message: string): Promise<string> {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) throw new Error('OpenAI API key not configured');
 
-    console.log('📤 Sending to OpenRouter:', filtered[filtered.length - 1]?.content);
-
-    const response = await openai.chat.completions.create({
-      model: 'anthropic/claude-haiku-4.5', // ✅ Free on OpenRouter
-      stream: true,
-      max_tokens: 500,
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o-mini',
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
-        ...filtered.map((m: { role: string; content: string }) => ({
-          role: m.role as 'user' | 'assistant',
-          content: m.content,
-        })),
+        { role: 'user', content: message },
       ],
-    });
+      max_tokens: 500,
+      temperature: 0.7,
+    }),
+  });
 
-    const stream = new ReadableStream({
-      async start(controller) {
-        try {
-          for await (const chunk of response) {
-            const content = chunk.choices[0]?.delta?.content;
-            if (content) {
-              console.log('📥 Chunk:', content.substring(0, 50));
-              controller.enqueue(encoder.encode(content));
-            }
-          }
-        } catch (err) {
-          console.error('❌ Stream error:', err);
-          controller.enqueue(encoder.encode('\n\nResponse interrupted. Please try again.'));
-        } finally {
-          controller.close();
-        }
-      },
-    });
-
-    return new Response(stream, {
-      headers: {
-        'Content-Type': 'text/plain; charset=utf-8',
-        'Cache-Control': 'no-cache',
-      },
-    });
-  } catch (error) {
-    console.error('❌ Chat error:', (error as Error)?.message);
-    return errorStream("Sorry, I'm having trouble right now. Please try again.");
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(`OpenAI API error: ${response.status} - ${JSON.stringify(error)}`);
   }
+
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content ?? 'Sorry, I could not generate a response.';
+}
+
+// ─── Google Generative AI Handler (Fallback) ───
+async function handleGoogleAI(message: string): Promise<string> {
+  const apiKey = process.env.GOOGLE_AI_API_KEY;
+  if (!apiKey) throw new Error('Google AI API key not configured');
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        contents: [
+          { role: 'user', parts: [{ text: message }] },
+        ],
+        generationConfig: {
+          maxOutputTokens: 500,
+          temperature: 0.7,
+        },
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Google AI API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return (
+    data.candidates?.[0]?.content?.parts?.[0]?.text ??
+    'Sorry, I could not generate a response.'
+  );
+}
+
+// ─── Route Handler ───
+export async function POST(request: NextRequest) {
+  try {
+    // Rate limiting
+    const ip =
+      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+      request.headers.get('x-real-ip') ??
+      'anonymous';
+
+    if (!checkRateLimit(ip)) {
+      return NextResponse.json(
+        {
+          error: 'Too many requests. Please wait a moment before trying again.',
+          code: 'RATE_LIMITED',
+        },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': '60',
+          },
+        }
+      );
+    }
+
+    // Parse and validate body
+    const body = await request.json().catch(() => null);
+    if (!body) {
+      return NextResponse.json(
+        { error: 'Invalid request body', code: 'INVALID_BODY' },
+        { status: 400 }
+      );
+    }
+
+    const validation = chatMessageSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json(
+        {
+          error: validation.error.issues[0]?.message ?? 'Invalid message',
+          code: 'VALIDATION_ERROR',
+        },
+        { status: 400 }
+      );
+    }
+
+    const { message } = validation.data;
+
+    // Try OpenAI first, fallback to Google AI
+    let reply: string;
+    try {
+      reply = await handleOpenAI(message);
+    } catch (openAIError) {
+      console.warn('[Chat API] OpenAI failed, falling back to Google AI:', openAIError);
+
+      try {
+        reply = await handleGoogleAI(message);
+      } catch (googleError) {
+        console.error('[Chat API] Both providers failed:', googleError);
+        return NextResponse.json(
+          {
+            error:
+              "I'm having trouble connecting right now. Please try again later or contact Hossam directly.",
+            code: 'PROVIDER_ERROR',
+          },
+          { status: 503 }
+        );
+      }
+    }
+
+    return NextResponse.json(
+      { reply, timestamp: new Date().toISOString() },
+      {
+        status: 200,
+        headers: {
+          'Cache-Control': 'no-store',
+        },
+      }
+    );
+  } catch (error) {
+    console.error('[Chat API] Unexpected error:', error);
+    return NextResponse.json(
+      {
+        error: 'An unexpected error occurred. Please try again.',
+        code: 'INTERNAL_ERROR',
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// ─── OPTIONS for CORS ───
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    },
+  });
 }

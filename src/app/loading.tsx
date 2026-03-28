@@ -1,39 +1,34 @@
 // src/app/loading.tsx
-'use client';
-
-import React from 'react';
-import { motion } from 'framer-motion';
+// ─── Global Loading UI (Streaming Suspense) ───
 
 export default function Loading() {
   return (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center"
-      style={{ backgroundColor: 'var(--color-bg)' }}
+      className="fixed inset-0 z-[9998] flex items-center justify-center bg-[var(--bg-primary)]"
+      role="progressbar"
+      aria-label="Loading page content"
+      aria-busy="true"
     >
-      <motion.div
-        className="flex items-center gap-2"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-      >
-        {[0, 1, 2].map((i) => (
-          <motion.div
-            key={i}
-            className="h-2 w-2 rounded-full"
-            style={{ backgroundColor: 'var(--color-accent)' }}
-            animate={{
-              y: [0, -12, 0],
-              opacity: [0.3, 1, 0.3],
-            }}
-            transition={{
-              duration: 0.8,
-              repeat: Infinity,
-              delay: i * 0.15,
-              ease: 'easeInOut',
-            }}
+      <div className="flex flex-col items-center gap-6">
+        {/* Animated logo/spinner */}
+        <div className="relative h-16 w-16">
+          {/* Outer ring */}
+          <div className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-green-500 opacity-75" />
+          {/* Inner ring */}
+          <div
+            className="absolute inset-2 animate-spin rounded-full border-2 border-transparent border-b-green-400 opacity-50"
+            style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}
           />
-        ))}
-      </motion.div>
+          {/* Center dot */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="h-2 w-2 animate-pulse rounded-full bg-green-500" />
+          </div>
+        </div>
+
+        <span className="font-mono text-body-sm tracking-wider text-[var(--fg-muted)]">
+          Loading...
+        </span>
+      </div>
     </div>
   );
 }

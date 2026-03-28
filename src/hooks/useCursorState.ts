@@ -1,44 +1,35 @@
 'use client';
+// src/hooks/useCursorState.ts
+// ─── Hook for components to control cursor ───
 
-import { useContext, useCallback } from 'react';
-import { CursorContext, type CursorType } from '@/components/core/cursor/cursor-context';
 
-export type { CursorType };
+import { useCallback } from 'react';
+import { useCursor } from '@/components/core/cursor/cursor-provider';
 
-export function useCursorState() {
-  const context = useContext(CursorContext);
+type CursorVariant = 'default' | 'text' | 'link' | 'project' | 'hidden';
 
-  if (!context) {
-    throw new Error('useCursorState must be used within CursorProvider');
-  }
+interface UseCursorStateOptions {
+  variant?: CursorVariant;
+  text?: string;
+}
 
-  const setCursor = useCallback(
-    (type: CursorType, label?: string) => {
-      context.setType(type);
-      if (label !== undefined) context.setLabel(label);
-    },
-    [context]
-  );
+export function useCursorState(options: UseCursorStateOptions = {}) {
+  const { variant = 'link', text = '' } = options;
+  const { setCursorVariant, setCursorText } = useCursor();
 
-  const resetCursor = useCallback(() => {
-    context.setType('default');
-    context.setLabel('');
-  }, [context]);
+  const onMouseEnter = useCallback(() => {
+    setCursorVariant(variant);
+    setCursorText(text);
+  }, [variant, text, setCursorVariant, setCursorText]);
 
-  const cursorHandlers = useCallback(
-    (type: CursorType, label?: string) => ({
-      onMouseEnter: () => setCursor(type, label),
-      onMouseLeave: resetCursor,
-    }),
-    [setCursor, resetCursor]
-  );
+  const onMouseLeave = useCallback(() => {
+    setCursorVariant('default');
+    setCursorText('');
+  }, [setCursorVariant, setCursorText]);
 
   return {
-    type: context.type,
-    label: context.label,
-    position: context.position,
-    setCursor,
-    resetCursor,
-    cursorHandlers,
+    onMouseEnter,
+    onMouseLeave,
+    cursorProps: { onMouseEnter, onMouseLeave },
   };
 }

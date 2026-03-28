@@ -1,263 +1,252 @@
-// src/components/sections/home/showcase-section.tsx (continued)
 'use client';
 
-import React, { useRef, useEffect } from 'react';
-import { gsap, ScrollTrigger, gsapEase, duration as dur } from '@/systems/animation';
-import { motion } from 'framer-motion';
-import { SectionHeading } from '@/components/ui/section-heading';
-import { ImageReveal } from '@/components/ui/image-reveal';
-import { AnimatedButton } from '@/components/ui/animated-button';
-import { useCursorState, useReducedMotion } from '@/hooks';
+// src/components/sections/home/showcase-section.tsx
+// ─── Featured Projects Showcase ───
+
+
+
+import { memo, useRef, useState, useCallback } from 'react';
+import Image from 'next/image';
+import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
+import * as presets from '@/systems/animation/presets';
+import { MotionWrapper } from '@/components/ui/motion-wrapper';
+import { GlassCard } from '@/components/ui/glass-card';
+import { AnimatedButton } from '@/components/ui/animated-btn';
+import { MagneticElement } from '@/components/ui/magnetic-element';
+import { cn } from '@/utils/cn';
+
 import { ArrowUpRight } from 'lucide-react';
+import { 
+  FaGithub as Github,
+
+} from 'react-icons/fa';
+
 
 interface Project {
   id: string;
   title: string;
   description: string;
+  longDescription: string;
   image: string;
   tags: string[];
-  url: string;
-  github?: string;
-  year: string;
+  liveUrl?: string;
+  githubUrl?: string;
+  featured: boolean;
 }
 
 const projects: Project[] = [
   {
-    id: 'hossroute',
-    title: 'HossRoute',
-    description:
-      'Full-stack routing application with real-time tracking, authentication, and map integration.',
-    image: '/hossroute.webp',
-    tags: ['Next.js', 'Node.js', 'MongoDB', 'Maps API'],
-    url: '#',
-    year: '2024',
-  },
-  {
-    id: 'shop-hub',
-    title: 'Shop Hub',
-    description:
-      'E-commerce platform with product management, cart system, and payment processing.',
-    image: '/shop-hub-ecommerce.webp',
-    tags: ['React', 'Express', 'MongoDB', 'Stripe'],
-    url: '#',
-    year: '2024',
+    id: 'any',
+    title: 'Adasa Platform',
+    description: 'A comprehensive e-commerce platform with real-time features.',
+    longDescription:
+      'Built a full-stack e-commerce platform with real-time inventory tracking, dynamic pricing, advanced search, and a seamless checkout experience. Implemented server-side rendering for SEO and instant load times.',
+    image: '/adasa.webp',
+    tags: ['Next.js', 'TypeScript', 'MongoDB', 'Tailwind CSS', 'Stripe'],
+    liveUrl: 'https://adasa.example.com',
+    githubUrl: 'https://github.com/hossamhassan/adasa',
+    featured: true,
   },
   {
     id: 'e-learning',
     title: 'E-Learning Platform',
-    description:
-      'Interactive education platform with course management, video streaming, and progress tracking.',
+    description: 'Interactive learning platform with video streaming and progress tracking.',
+    longDescription:
+      'Designed and developed a modern e-learning platform with video streaming, course management, quiz engine, and student progress analytics. Features include real-time chat, certificate generation, and payment integration.',
     image: '/E-learning.webp',
-    tags: ['Next.js', 'TypeScript', 'Prisma', 'PostgreSQL'],
-    url: '#',
-    year: '2023',
+    tags: ['React', 'Node.js', 'Express', 'MongoDB', 'Socket.io'],
+    liveUrl: 'https://elearning.example.com',
+    githubUrl: 'https://github.com/hossamhassan/e-learning',
+    featured: true,
   },
   {
-    id: 'runnet',
-    title: 'Runnet',
-    description:
-      'Social fitness application with activity tracking, challenges, and community features.',
-    image: '/runnet1.webp',
-    tags: ['React', 'Node.js', 'Socket.io', 'MongoDB'],
-    url: '#',
-    year: '2023',
+    id: 'project3',
+    title: 'Portfolio Dashboard',
+    description: 'Admin dashboard with analytics, charts, and data management.',
+    longDescription:
+      'A feature-rich admin dashboard built with React and TypeScript. Includes interactive charts, data tables with server-side pagination, role-based access control, and real-time notifications.',
+    image: '/project3.webp',
+    tags: ['React', 'TypeScript', 'Chart.js', 'Tailwind', 'Firebase'],
+    githubUrl: 'https://github.com/hossamhassan/dashboard',
+    featured: false,
   },
 ];
 
-function ProjectCard({ project, index }: { project: Project; index: number }) {
+// ─── Project Card Component ───
+function ProjectCard({
+  project,
+  index,
+}: {
+  project: Project;
+  index: number;
+}) {
   const cardRef = useRef<HTMLDivElement>(null);
-  const { cursorHandlers } = useCursorState();
+  const [isHovered, setIsHovered] = useState(false);
+
   const isEven = index % 2 === 0;
 
   return (
-    <div
-      ref={cardRef}
-      className={`project-card grid items-center gap-8 md:gap-16 ${
-        isEven ? 'md:grid-cols-[1.2fr_1fr]' : 'md:grid-cols-[1fr_1.2fr]'
-      }`}
-      {...cursorHandlers('project', 'View')}
+    <MotionWrapper
+      preset={isEven ? 'slideLeft' : 'slideRight'}
+      delay={index * 0.1}
     >
-      {/* Image */}
-      <div className={`${!isEven ? 'md:order-2' : ''}`}>
-        <a href={project.url} target="_blank" rel="noopener noreferrer">
-          <div className="group relative overflow-hidden rounded-2xl">
-            <ImageReveal
-              src={project.image}
-              alt={project.title}
-              width={800}
-              height={500}
-              direction={isEven ? 'left' : 'right'}
-              parallax
-              parallaxSpeed={10}
-              className="aspect-[16/10] w-full"
-            />
+      <GlassCard
+        ref={cardRef}
+        className={cn(
+          'group relative overflow-hidden transition-all duration-500',
+          project.featured && 'md:col-span-2'
+        )}
+        hover="lift"
+        glow
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <div
+          className={cn(
+            'flex flex-col gap-6',
+            project.featured ? 'md:flex-row md:items-center' : ''
+          )}
+        >
+          {/* Project Image */}
+          <div
+            className={cn(
+              'relative overflow-hidden rounded-card-sm',
+              project.featured ? 'md:w-1/2' : 'w-full'
+            )}
+          >
+            <div className="aspect-video w-full">
+              <Image
+                src={project.image}
+                alt={`${project.title} preview`}
+                fill
+                sizes={project.featured ? '(max-width: 768px) 100vw, 50vw' : '(max-width: 768px) 100vw, 33vw'}
+                className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                loading="lazy"
+                quality={85}
+              />
+            </div>
 
             {/* Overlay on hover */}
-            <motion.div
-              className="absolute inset-0 flex items-center justify-center rounded-2xl"
-              initial={{ opacity: 0 }}
-              whileHover={{ opacity: 1 }}
-              style={{
-                backgroundColor: 'rgba(var(--color-accent-rgb), 0.1)',
-                backdropFilter: 'blur(4px)',
-              }}
-              transition={{ duration: 0.4 }}
-            >
-              <motion.div
-                className="flex h-20 w-20 items-center justify-center rounded-full"
-                style={{ backgroundColor: 'var(--color-accent)' }}
-                initial={{ scale: 0 }}
-                whileHover={{ scale: 1 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-              >
-                <ArrowUpRight size={24} color="#fff" />
-              </motion.div>
-            </motion.div>
+            <AnimatePresence>
+              {isHovered && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="absolute inset-0 flex items-center justify-center bg-green-950/60 backdrop-blur-sm"
+                >
+                  <motion.div
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.8, opacity: 0 }}
+                    transition={presets.transitions.springBouncy}
+                  >
+                    <ArrowUpRight className="h-10 w-10 text-green-400" />
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-        </a>
-      </div>
 
-      {/* Content */}
-      <div className={`${!isEven ? 'md:order-1' : ''}`}>
-        {/* Year + Tags */}
-        <div className="mb-4 flex items-center gap-4">
-          <span className="text-overline" style={{ color: 'var(--color-accent)' }}>
-            {project.year}
-          </span>
-          <div className="h-px flex-1" style={{ backgroundColor: 'var(--color-border)' }} />
+          {/* Project Info */}
+          <div className={cn(project.featured ? 'md:w-1/2' : 'w-full')}>
+            {/* Tags */}
+            <div className="mb-3 flex flex-wrap gap-1.5">
+              {project.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded-full border border-[var(--border-subtle)] px-2.5 py-0.5 font-mono text-caption text-[var(--fg-muted)] transition-colors group-hover:border-[var(--border-accent)] group-hover:text-[var(--fg-accent)]"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+
+            {/* Title */}
+            <h3 className="text-heading-lg font-bold text-[var(--fg-primary)] transition-colors group-hover:text-[var(--fg-accent)]">
+              {project.title}
+            </h3>
+
+            {/* Description */}
+            <p className="mt-2 text-body-md leading-relaxed text-[var(--fg-secondary)]">
+              {project.featured ? project.longDescription : project.description}
+            </p>
+
+            {/* Links */}
+            <div className="mt-5 flex items-center gap-3">
+              {project.liveUrl && (
+                <MagneticElement strength={0.2}>
+                  <AnimatedButton
+                    href={project.liveUrl}
+                    variant="primary"
+                    size="sm"
+                    icon={<ArrowUpRight className="h-3.5 w-3.5" />}
+                    external
+                  >
+                    Live Demo
+                  </AnimatedButton>
+                </MagneticElement>
+              )}
+
+              {project.githubUrl && (
+                <MagneticElement strength={0.2}>
+                  <AnimatedButton
+                    href={project.githubUrl}
+                    variant="ghost"
+                    size="sm"
+                    icon={<Github className="h-3.5 w-3.5" />}
+                    external
+                  >
+                    Source
+                  </AnimatedButton>
+                </MagneticElement>
+              )}
+            </div>
+          </div>
         </div>
-
-        {/* Title */}
-        <h3
-          className="mb-4 text-4xl font-bold md:text-5xl"
-          style={{ fontFamily: 'var(--font-display)', letterSpacing: '-0.02em' }}
-        >
-          {project.title}
-        </h3>
-
-        {/* Description */}
-        <p
-          className="mb-6 max-w-md text-lg leading-relaxed"
-          style={{ color: 'var(--color-text-secondary)' }}
-        >
-          {project.description}
-        </p>
-
-        {/* Tags */}
-        <div className="mb-8 flex flex-wrap gap-2">
-          {project.tags.map((tag) => (
-            <span
-              key={tag}
-              className="glass rounded-full px-4 py-1.5 text-xs font-medium"
-              style={{ color: 'var(--color-text-secondary)' }}
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-
-        {/* CTA */}
-        <AnimatedButton
-          href={project.url}
-          variant="outline"
-          size="md"
-          icon={<ArrowUpRight size={16} />}
-        >
-          View Project
-        </AnimatedButton>
-      </div>
-    </div>
+      </GlassCard>
+    </MotionWrapper>
   );
 }
 
-export function ShowcaseSection() {
-  const sectionRef = useRef<HTMLElement>(null);
-  const prefersReducedMotion = useReducedMotion();
-
-  useEffect(() => {
-    if (!sectionRef.current || prefersReducedMotion) return;
-
-    const ctx = gsap.context(() => {
-      // Each project card animates in on scroll
-      const cards = gsap.utils.toArray<HTMLElement>('.project-card');
-
-      cards.forEach((card, i) => {
-        const tl = gsap.timeline({
-          scrollTrigger: {
-            trigger: card,
-            start: 'top 80%',
-            toggleActions: 'play none none none',
-          },
-        });
-
-        // Content side
-        const contentEls = card.querySelectorAll(
-          'h3, p, .text-overline, .flex.flex-wrap, a'
-        );
-
-        tl.from(contentEls, {
-          y: 50,
-          opacity: 0,
-          duration: dur.medium,
-          stagger: 0.1,
-          ease: gsapEase.smooth,
-        });
-      });
-
-      // Separator lines between projects
-      gsap.from('.project-separator', {
-        scaleX: 0,
-        duration: dur.slower,
-        ease: gsapEase.cinematic,
-        transformOrigin: 'left center',
-        stagger: 0.2,
-        scrollTrigger: {
-          trigger: '.projects-list',
-          start: 'top 70%',
-          toggleActions: 'play none none none',
-        },
-      });
-    }, sectionRef);
-
-    return () => ctx.revert();
-  }, [prefersReducedMotion]);
-
+// ─── Main Section ───
+const ShowcaseSectionComponent = () => {
   return (
-    <section ref={sectionRef} id="showcase" className="section-padding relative">
-      <div className="container-main">
-        <SectionHeading
-          overline="// 03 — Showcase"
-          title="Selected Work"
-          description="A curated selection of projects that demonstrate my approach to full-stack development, design thinking, and technical execution."
-        />
+    <section
+      id="showcase"
+      className="section-container"
+      aria-labelledby="showcase-heading"
+    >
+      {/* Section header */}
+      <MotionWrapper preset="slideUp" className="mb-16 text-center">
+        <span className="mb-4 inline-block font-mono text-body-sm font-medium uppercase tracking-wider text-[var(--fg-accent)]">
+          {'// Showcase'}
+        </span>
+        <h2
+          id="showcase-heading"
+          className="text-display-xl font-bold tracking-tight"
+        >
+          Featured{' '}
+          <span className="gradient-green-text">Projects</span>
+        </h2>
+        <p className="mx-auto mt-4 max-w-xl text-body-lg text-[var(--fg-secondary)]">
+          A selection of projects that showcase my expertise in full-stack development.
+        </p>
+      </MotionWrapper>
 
-        {/* Projects list */}
-        <div className="projects-list mt-20 space-y-0">
-          {projects.map((project, i) => (
-            <React.Fragment key={project.id}>
-              {i > 0 && (
-                <div
-                  className="project-separator my-16 h-px w-full md:my-24"
-                  style={{ backgroundColor: 'var(--color-border)' }}
-                />
-              )}
-              <ProjectCard project={project} index={i} />
-            </React.Fragment>
-          ))}
-        </div>
-
-        {/* View all button */}
-        <div className="mt-24 flex justify-center">
-          <AnimatedButton
-            href="https://github.com/hossamhassan"
-            variant="ghost"
-            size="lg"
-            icon={<ArrowUpRight size={18} />}
-          >
-            View All Projects on GitHub
-          </AnimatedButton>
-        </div>
+      {/* Project grid */}
+      <div className="grid gap-8 md:grid-cols-2">
+        {projects.map((project, index) => (
+          <ProjectCard
+            key={project.id}
+            project={project}
+            index={index}
+          />
+        ))}
       </div>
     </section>
   );
-}
+};
+
+export const ShowcaseSection = memo(ShowcaseSectionComponent);

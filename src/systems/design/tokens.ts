@@ -1,139 +1,191 @@
 // src/systems/design/tokens.ts
+// ─── Premium Green-Centric Design Token System ───
 
-export const tokens = {
-  colors: {
-    // Base palette — works for both themes
-    primary: {
-      50: '#f0f4ff',
-      100: '#dbe4ff',
-      200: '#bac8ff',
-      300: '#91a7ff',
-      400: '#748ffc',
-      500: '#5c7cfa',  // Primary accent
-      600: '#4c6ef5',
-      700: '#4263eb',
-      800: '#3b5bdb',
-      900: '#364fc7',
-    },
-    neutral: {
-      0: '#ffffff',
-      50: '#f8f9fa',
-      100: '#f1f3f5',
-      200: '#e9ecef',
-      300: '#dee2e6',
-      400: '#ced4da',
-      500: '#adb5bd',
-      600: '#868e96',
-      700: '#495057',
-      800: '#343a40',
-      900: '#212529',
-      950: '#0a0a0b',
-      1000: '#000000',
-    },
-    // Semantic
-    surface: {
-      light: 'rgba(255, 255, 255, 0.7)',
-      dark: 'rgba(10, 10, 11, 0.8)',
-    },
-    glass: {
-      light: 'rgba(255, 255, 255, 0.1)',
-      dark: 'rgba(255, 255, 255, 0.05)',
-      border: {
-        light: 'rgba(255, 255, 255, 0.2)',
-        dark: 'rgba(255, 255, 255, 0.08)',
-      },
-    },
-    gradient: {
-      hero: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      accent: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-      subtle: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%)',
-    },
+export const colors = {
+  // ─── Primary: Signature Green Palette ───
+  green: {
+    50:  'hsl(145, 80%, 96%)',
+    100: 'hsl(145, 75%, 90%)',
+    200: 'hsl(148, 70%, 78%)',
+    300: 'hsl(150, 65%, 65%)',
+    400: 'hsl(152, 60%, 50%)',  // Primary accent
+    500: 'hsl(155, 65%, 40%)',  // Core brand
+    600: 'hsl(158, 70%, 32%)',
+    700: 'hsl(160, 75%, 24%)',
+    800: 'hsl(162, 80%, 16%)',
+    900: 'hsl(164, 85%, 10%)',
+    950: 'hsl(166, 90%, 5%)',
   },
 
-  typography: {
-    // Font families
-    fontFamily: {
-      display: '"Satoshi", "Inter", system-ui, sans-serif',
-      body: '"Inter", system-ui, sans-serif',
-      mono: '"JetBrains Mono", "Fira Code", monospace',
-    },
-    // Fluid type scale (clamp-based)
-    fontSize: {
-      'display-xl': 'clamp(3.5rem, 8vw + 1rem, 10rem)',    // Hero name
-      'display-lg': 'clamp(2.5rem, 5vw + 1rem, 7rem)',      // Section titles
-      'display-md': 'clamp(2rem, 3vw + 0.5rem, 4.5rem)',    // Sub-headlines
-      'display-sm': 'clamp(1.5rem, 2vw + 0.5rem, 2.5rem)',  // Card titles
-      'heading': 'clamp(1.25rem, 1.5vw + 0.5rem, 1.75rem)', // H3
-      'body-lg': '1.25rem',                                    // Large body
-      'body': '1rem',                                           // Default body
-      'body-sm': '0.875rem',                                    // Small text
-      'caption': '0.75rem',                                     // Captions
-      'overline': '0.6875rem',                                  // Overlines
-    },
-    // Line heights
-    lineHeight: {
-      display: '0.95',   // Tight for display type
-      heading: '1.1',
-      body: '1.6',
-    },
-    // Letter spacing
-    letterSpacing: {
-      tight: '-0.03em',
-      normal: '0',
-      wide: '0.05em',
-      wider: '0.1em',
-      widest: '0.2em',
-    },
+  // ─── Neutral: Warm-tinted for cinematic feel ───
+  neutral: {
+    0:   'hsl(0, 0%, 100%)',
+    50:  'hsl(150, 5%, 97%)',
+    100: 'hsl(150, 4%, 93%)',
+    200: 'hsl(150, 3%, 85%)',
+    300: 'hsl(150, 3%, 70%)',
+    400: 'hsl(150, 2%, 50%)',
+    500: 'hsl(150, 2%, 35%)',
+    600: 'hsl(150, 3%, 22%)',
+    700: 'hsl(150, 5%, 15%)',
+    800: 'hsl(150, 8%, 10%)',
+    900: 'hsl(150, 12%, 7%)',
+    950: 'hsl(150, 15%, 4%)',
   },
 
-  spacing: {
-    section: {
-      vertical: 'clamp(6rem, 15vh, 12rem)',    // Between sections
-      horizontal: 'clamp(1.5rem, 5vw, 6rem)',  // Page padding
+  // ─── Semantic ───
+  success: 'hsl(152, 60%, 50%)',
+  warning: 'hsl(42, 90%, 55%)',
+  error:   'hsl(0, 75%, 55%)',
+  info:    'hsl(200, 70%, 55%)',
+} as const;
+
+export const theme = {
+  dark: {
+    bg: {
+      primary:   colors.neutral[950],    // Near-black with green tint
+      secondary: colors.neutral[900],
+      tertiary:  colors.neutral[800],
+      elevated:  'hsla(150, 12%, 7%, 0.8)',  // Glass effect base
     },
-    container: {
-      max: '1440px',
-      content: '1200px',
-      narrow: '800px',
+    fg: {
+      primary:   colors.neutral[0],
+      secondary: colors.neutral[300],
+      muted:     colors.neutral[400],
+      accent:    colors.green[400],
+    },
+    border: {
+      subtle:  'hsla(150, 10%, 50%, 0.08)',
+      default: 'hsla(150, 10%, 50%, 0.12)',
+      strong:  'hsla(150, 10%, 50%, 0.20)',
+      accent:  'hsla(152, 60%, 50%, 0.30)',
+    },
+    glow: {
+      green:   'hsla(152, 60%, 50%, 0.15)',
+      greenMd: 'hsla(152, 60%, 50%, 0.08)',
+      greenSm: 'hsla(152, 60%, 50%, 0.04)',
     },
   },
-
-  animation: {
-    duration: {
-      instant: 0.1,
-      fast: 0.3,
-      normal: 0.6,
-      slow: 1.0,
-      slower: 1.5,
-      cinematic: 2.0,
+  light: {
+    bg: {
+      primary:   colors.neutral[0],
+      secondary: colors.neutral[50],
+      tertiary:  colors.neutral[100],
+      elevated:  'hsla(0, 0%, 100%, 0.8)',
     },
-    stagger: {
-      fast: 0.03,
-      normal: 0.05,
-      slow: 0.08,
-      text: 0.02,
+    fg: {
+      primary:   colors.neutral[950],
+      secondary: colors.neutral[600],
+      muted:     colors.neutral[400],
+      accent:    colors.green[600],
     },
-  },
-
-  effects: {
-    blur: {
-      glass: '20px',
-      heavy: '40px',
-      subtle: '8px',
+    border: {
+      subtle:  'hsla(150, 10%, 20%, 0.05)',
+      default: 'hsla(150, 10%, 20%, 0.10)',
+      strong:  'hsla(150, 10%, 20%, 0.18)',
+      accent:  'hsla(155, 65%, 40%, 0.25)',
     },
-    borderRadius: {
-      sm: '8px',
-      md: '12px',
-      lg: '20px',
-      xl: '32px',
-      full: '9999px',
-    },
-    shadow: {
-      glass: '0 8px 32px rgba(0, 0, 0, 0.08)',
-      elevated: '0 16px 64px rgba(0, 0, 0, 0.12)',
-      glow: '0 0 60px rgba(92, 124, 250, 0.15)',
+    glow: {
+      green:   'hsla(155, 65%, 40%, 0.12)',
+      greenMd: 'hsla(155, 65%, 40%, 0.06)',
+      greenSm: 'hsla(155, 65%, 40%, 0.03)',
     },
   },
 } as const;
 
-export type DesignTokens = typeof tokens;
+// ─── Fluid Typography Scale (clamp-based) ───
+export const typography = {
+  fontFamily: {
+    display: '"Inter", "SF Pro Display", -apple-system, sans-serif',
+    body:    '"Inter", "SF Pro Text", -apple-system, sans-serif',
+    mono:    '"JetBrains Mono", "SF Mono", "Fira Code", monospace',
+  },
+  fontSize: {
+    // clamp(min, preferred, max)
+    'display-2xl': 'clamp(3.5rem, 8vw + 1rem, 8rem)',     // Hero headline
+    'display-xl':  'clamp(2.75rem, 6vw + 0.5rem, 6rem)',   // Section titles
+    'display-lg':  'clamp(2rem, 4vw + 0.5rem, 4rem)',
+    'display-md':  'clamp(1.5rem, 3vw + 0.25rem, 2.5rem)',
+    'heading-lg':  'clamp(1.25rem, 2vw + 0.25rem, 2rem)',
+    'heading-md':  'clamp(1.125rem, 1.5vw + 0.25rem, 1.5rem)',
+    'body-lg':     'clamp(1.0625rem, 1vw + 0.25rem, 1.25rem)',
+    'body-md':     '1rem',
+    'body-sm':     '0.875rem',
+    'caption':     '0.75rem',
+  },
+  lineHeight: {
+    tight:   1.1,
+    snug:    1.25,
+    normal:  1.5,
+    relaxed: 1.7,
+  },
+  letterSpacing: {
+    tighter: '-0.04em',
+    tight:   '-0.02em',
+    normal:  '0em',
+    wide:    '0.05em',
+    wider:   '0.1em',
+  },
+} as const;
+
+// ─── Spacing Scale ───
+export const spacing = {
+  section: {
+    paddingY: 'clamp(5rem, 12vh, 10rem)',
+    gap:      'clamp(3rem, 8vh, 6rem)',
+  },
+  container: {
+    maxWidth: '80rem',     // 1280px
+    paddingX: 'clamp(1.5rem, 5vw, 4rem)',
+  },
+  card: {
+    padding:  'clamp(1.5rem, 3vw, 2.5rem)',
+    radius:   '1.25rem',
+    radiusSm: '0.75rem',
+  },
+} as const;
+
+// ─── Depth/Elevation System ───
+export const elevation = {
+  sm:  '0 1px 2px hsla(0,0%,0%,0.05), 0 1px 3px hsla(0,0%,0%,0.1)',
+  md:  '0 4px 6px hsla(0,0%,0%,0.05), 0 10px 15px hsla(0,0%,0%,0.1)',
+  lg:  '0 10px 25px hsla(0,0%,0%,0.07), 0 20px 48px hsla(0,0%,0%,0.1)',
+  xl:  '0 20px 50px hsla(0,0%,0%,0.1), 0 40px 80px hsla(0,0%,0%,0.15)',
+  glow: '0 0 30px hsla(152, 60%, 50%, 0.2), 0 0 60px hsla(152, 60%, 50%, 0.1)',
+} as const;
+
+// ─── Timing/Easing ───
+export const motion = {
+  duration: {
+    instant: 0.1,
+    fast:    0.2,
+    normal:  0.4,
+    slow:    0.6,
+    slower:  0.8,
+    cinematic: 1.2,
+  },
+  easing: {
+    // Custom cubic-bezier for premium feel
+    smooth:    [0.25, 0.1, 0.25, 1.0],
+    snappy:    [0.16, 1, 0.3, 1],
+    dramatic:  [0.77, 0, 0.175, 1],
+    bounce:    [0.34, 1.56, 0.64, 1],
+    decelerate:[0, 0, 0.2, 1],
+    accelerate:[0.4, 0, 1, 1],
+  },
+} as const;
+
+// ─── Z-Index Scale ───
+export const zIndex = {
+  base:      0,
+  above:     10,
+  sticky:    100,
+  overlay:   200,
+  modal:     300,
+  toast:     400,
+  cursor:    500,
+  preloader: 9999,
+} as const;
+
+export type ThemeMode = 'dark' | 'light';
+export type ThemeTokens = typeof theme.dark;

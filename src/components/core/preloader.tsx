@@ -1,157 +1,104 @@
-// src/components/core/preloader.tsx
 'use client';
+// src/components/core/preloader.tsx
+// ─── Cinematic Preloader with Green Theme ───
 
-import React, { useState, useEffect, useRef } from 'react';
-import { gsap } from '@/systems/animation';
-import { gsapEase, duration } from '@/systems/animation';
 
-interface PreloaderProps {
-  onComplete: () => void;
-}
+import { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import * as presets from '@/systems/animation/presets';
 
-export function Preloader({ onComplete }: PreloaderProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const nameRef = useRef<HTMLSpanElement>(null);
-  const roleRef = useRef<HTMLSpanElement>(null);
-  const lineRef = useRef<HTMLDivElement>(null);
-  const counterRef = useRef<HTMLSpanElement>(null);
+export function Preloader() {
+  const [isLoading, setIsLoading] = useState(true);
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    if (!containerRef.current) return;
-
-    const ctx = gsap.context(() => {
-      const master = gsap.timeline({
-        onComplete: () => {
-          // Exit animation
-          gsap
-            .timeline()
-            .to('.preloader-content', {
-              y: -40,
-              opacity: 0,
-              duration: 0.5,
-              ease: gsapEase.smooth,
-            })
-            .to(
-              containerRef.current,
-              {
-                yPercent: -100,
-                duration: 1,
-                ease: gsapEase.cinematic,
-                onComplete,
-              },
-              '-=0.2'
-            );
-        },
+    // Simulate loading progress
+    const timer = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 100) {
+          clearInterval(timer);
+          return 100;
+        }
+        // Accelerating progress curve
+        const increment = Math.max(1, (100 - prev) * 0.1);
+        return Math.min(prev + increment, 100);
       });
+    }, 50);
 
-      // Counter animation
-      const counter = { val: 0 };
-      master.to(counter, {
-        val: 100,
-        duration: 2,
-        ease: 'power2.inOut',
-        onUpdate: () => {
-          if (counterRef.current) {
-            counterRef.current.textContent = `${Math.round(counter.val)}`;
-          }
-        },
-      });
+    // Actual load check
+    const handleLoad = () => {
+      setProgress(100);
+      setTimeout(() => setIsLoading(false), 600);
+    };
 
-      // Line grows
-      master.fromTo(
-        lineRef.current,
-        { scaleX: 0 },
-        {
-          scaleX: 1,
-          duration: 2,
-          ease: 'power2.inOut',
-          transformOrigin: 'left center',
-        },
-        0
-      );
+    if (document.readyState === 'complete') {
+      handleLoad();
+    } else {
+      window.addEventListener('load', handleLoad);
+    }
 
-      // Name reveals at 40%
-      master.from(
-        nameRef.current,
-        {
-          y: 60,
-          opacity: 0,
-          duration: 0.8,
-          ease: gsapEase.cinematic,
-        },
-        0.8
-      );
+    // Fallback: force close after 4 seconds
+    const fallback = setTimeout(() => {
+      setProgress(100);
+      setTimeout(() => setIsLoading(false), 300);
+    }, 4000);
 
-      // Role reveals at 60%
-      master.from(
-        roleRef.current,
-        {
-          y: 30,
-          opacity: 0,
-          duration: 0.6,
-          ease: gsapEase.smooth,
-        },
-        1.2
-      );
-    }, containerRef);
-
-    return () => ctx.revert();
-  }, [onComplete]);
+    return () => {
+      clearInterval(timer);
+      clearTimeout(fallback);
+      window.removeEventListener('load', handleLoad);
+    };
+  }, []);
 
   return (
-    <div
-      ref={containerRef}
-      className="fixed inset-0 z-[10000] flex items-center justify-center"
-      style={{ backgroundColor: 'var(--color-bg)' }}
-    >
-      <div className="preloader-content flex flex-col items-center gap-6">
-        {/* Name */}
-        <div className="overflow-hidden">
-          <span
-            ref={nameRef}
-            className="text-display-md block"
-            style={{ fontFamily: 'var(--font-display)' }}
-          >
-            Hossam Hassan
-          </span>
-        </div>
-
-        {/* Role */}
-        <div className="overflow-hidden">
-          <span
-            ref={roleRef}
-            className="text-overline block"
-            style={{ color: 'var(--color-text-tertiary)' }}
-          >
-            MEARN Stack Developer
-          </span>
-        </div>
-
-        {/* Progress line */}
-        <div className="relative mt-8 w-48">
-          <div
-            className="h-px w-full"
-            style={{ backgroundColor: 'var(--color-border)' }}
-          />
-          <div
-            ref={lineRef}
-            className="absolute left-0 top-0 h-px w-full origin-left"
-            style={{
-              backgroundColor: 'var(--color-accent)',
-              transform: 'scaleX(0)',
-            }}
-          />
-        </div>
-
-        {/* Counter */}
-        <span
-          ref={counterRef}
-          className="font-mono text-sm tabular-nums"
-          style={{ color: 'var(--color-text-tertiary)' }}
+    <AnimatePresence mode="wait">
+      {isLoading && (
+        <motion.div
+          key="preloader"
+          className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[hsl(var(--neutral-950))]"
+          exit={{
+            clipPath: 'inset(0% 0% 100% 0%)',
+            transition: {
+              duration: 0.8,
+              ease: presets.easings.dramatic,
+            },
+          }}
         >
-          0
-        </span>
-      </div>
-    </div>
+          {/* Logo / Name */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, ...presets.transitions.snappy }}
+            className="mb-12"
+          >
+            <h1 className="text-display-md font-bold tracking-tighter">
+              <span className="text-white">H</span>
+              <span className="gradient-green-text">H</span>
+            </h1>
+          </motion.div>
+
+          {/* Progress bar */}
+          <div className="w-48">
+            <div className="mb-3 h-0.5 w-full overflow-hidden rounded-full bg-white/10">
+              <motion.div
+                className="h-full rounded-full bg-gradient-to-r from-green-500 to-green-400"
+                initial={{ width: '0%' }}
+                animate={{ width: `${progress}%` }}
+                transition={{ duration: 0.3, ease: 'easeOut' }}
+              />
+            </div>
+
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className="text-center font-mono text-caption text-white/40"
+            >
+              {Math.round(progress)}%
+            </motion.p>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

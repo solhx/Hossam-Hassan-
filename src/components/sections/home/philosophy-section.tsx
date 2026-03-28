@@ -1,166 +1,135 @@
-// src/components/sections/home/philosophy-section.tsx
 'use client';
+// src/components/sections/home/philosophy-section.tsx
 
-import React, { useRef, useEffect } from 'react';
-import { gsap, ScrollTrigger, gsapEase, duration as dur } from '@/systems/animation';
-import { TextReveal } from '@/components/ui/animated-text/text-reveal';
-import { SectionHeading } from '@/components/ui/section-heading';
-import { ImageReveal } from '@/components/ui/image-reveal';
-import { useReducedMotion } from '@/hooks';
+// ─── Development Philosophy Section ───
 
-const philosophyText = `I believe great software is invisible. It doesn't make users think about technology — it makes them think about what they're trying to accomplish. Every line of code I write serves the user experience first, performance second, and aesthetics always.`;
 
-const values = [
+
+import { memo } from 'react';
+import { motion } from 'framer-motion';
+import * as presets from '@/systems/animation/presets';
+import { MotionWrapper } from '@/components/ui/motion-wrapper';
+import { GlassCard } from '@/components/ui/glass-card';
+import { Code2, Zap, Shield, Palette } from 'lucide-react';
+
+const principles = [
   {
-    number: '01',
-    title: 'User-First',
+    icon: Code2,
+    title: 'Clean Architecture',
     description:
-      'Every decision starts with the user. Performance, accessibility, and delight are non-negotiable.',
+      'Writing maintainable, scalable code with clear separation of concerns. Every function has a purpose, every module has a boundary.',
+    accent: 'from-green-400 to-emerald-500',
   },
   {
-    number: '02',
-    title: 'Craft-Driven',
+    icon: Zap,
+    title: 'Performance First',
     description:
-      'I obsess over details — pixel-perfect layouts, smooth 60fps animations, clean architecture.',
+      'Obsessing over Core Web Vitals, bundle sizes, and runtime performance. Every millisecond matters for user experience.',
+    accent: 'from-green-500 to-teal-400',
   },
   {
-    number: '03',
-    title: 'Always Learning',
+    icon: Shield,
+    title: 'Type Safety',
     description:
-      'The web evolves daily. I stay ahead by building, experimenting, and contributing to the community.',
+      'Leveraging TypeScript and Zod for end-to-end type safety. Catching bugs at compile time, not in production.',
+    accent: 'from-emerald-400 to-green-600',
   },
-];
+  {
+    icon: Palette,
+    title: 'Pixel Perfect',
+    description:
+      'Translating designs into living interfaces with meticulous attention to spacing, typography, and motion design.',
+    accent: 'from-teal-400 to-green-500',
+  },
+] as const;
 
-export function PhilosophySection() {
-  const sectionRef = useRef<HTMLElement>(null);
-  const prefersReducedMotion = useReducedMotion();
-
-  useEffect(() => {
-    if (!sectionRef.current || prefersReducedMotion) return;
-
-    const ctx = gsap.context(() => {
-      // Horizontal scrolling marquee in background
-      gsap.to('.philosophy-marquee', {
-        xPercent: -50,
-        ease: 'none',
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: 'top bottom',
-          end: 'bottom top',
-          scrub: 1,
-        },
-      });
-
-      // Value cards stagger reveal
-      gsap.from('.value-card', {
-        y: 80,
-        opacity: 0,
-        duration: dur.medium,
-        stagger: 0.15,
-        ease: gsapEase.smooth,
-        scrollTrigger: {
-          trigger: '.values-grid',
-          start: 'top 80%',
-          toggleActions: 'play none none none',
-        },
-      });
-
-      // Separator line grows
-      gsap.from('.philosophy-separator', {
-        scaleX: 0,
-        duration: dur.slower,
-        ease: gsapEase.cinematic,
-        transformOrigin: 'left center',
-        scrollTrigger: {
-          trigger: '.philosophy-separator',
-          start: 'top 85%',
-          toggleActions: 'play none none none',
-        },
-      });
-    }, sectionRef);
-
-    return () => ctx.revert();
-  }, [prefersReducedMotion]);
-
+const PhilosophySectionComponent = () => {
   return (
     <section
-      ref={sectionRef}
       id="philosophy"
-      className="section-padding relative overflow-hidden"
+      className="section-container"
+      aria-labelledby="philosophy-heading"
     >
-      {/* Background marquee text */}
-      <div className="pointer-events-none absolute left-0 top-1/2 -translate-y-1/2 whitespace-nowrap opacity-[0.03]">
-        <span
-          className="philosophy-marquee inline-block text-[20vw] font-bold uppercase tracking-tight"
-          style={{ fontFamily: 'var(--font-display)' }}
-        >
-          Philosophy — Craft — Impact — Philosophy — Craft — Impact —
-        </span>
-      </div>
-
-      <div className="container-main relative z-10">
-        <SectionHeading
-          overline="// 01 — Philosophy"
-          title="What I Believe"
-        />
-
-        {/* Big manifesto text with scroll-driven word reveal */}
-        <div className="mb-24 max-w-4xl">
-          <TextReveal
-            as="p"
-            className="text-display-md font-light leading-[1.15]"
-            scrub
-          >
-            {philosophyText}
-          </TextReveal>
-        </div>
-
-        {/* Separator */}
-        <div
-          className="philosophy-separator mb-24 h-px w-full"
-          style={{ backgroundColor: 'var(--color-border)' }}
-        />
-
-        {/* Values grid */}
-        <div className="values-grid grid gap-8 md:grid-cols-3">
-          {values.map((value) => (
-            <div
-              key={value.number}
-              className="value-card group relative"
+      <div className="grid items-center gap-16 lg:grid-cols-2">
+        {/* Left: Text content */}
+        <div>
+          <MotionWrapper preset="slideUp">
+            <span className="mb-4 inline-block font-mono text-body-sm font-medium uppercase tracking-wider text-[var(--fg-accent)]">
+              {'// Philosophy'}
+            </span>
+            <h2
+              id="philosophy-heading"
+              className="text-display-xl font-bold tracking-tight"
             >
-              {/* Number */}
-              <span
-                className="mb-4 block font-mono text-sm"
-                style={{ color: 'var(--color-accent)' }}
-              >
-                {value.number}
-              </span>
+              How I{' '}
+              <span className="gradient-green-text">Build</span>{' '}
+              Things
+            </h2>
+          </MotionWrapper>
 
-              {/* Title */}
-              <h3
-                className="mb-3 text-2xl font-semibold"
-                style={{ fontFamily: 'var(--font-display)' }}
-              >
-                {value.title}
-              </h3>
+          <MotionWrapper preset="slideUp" delay={0.15}>
+            <p className="mt-6 text-body-lg leading-relaxed text-[var(--fg-secondary)]">
+              I believe great software is a craft. It&apos;s not just about making things
+              work — it&apos;s about making them work{' '}
+              <span className="font-semibold text-[var(--fg-accent)]">beautifully</span>,{' '}
+              <span className="font-semibold text-[var(--fg-accent)]">efficiently</span>,
+              and{' '}
+              <span className="font-semibold text-[var(--fg-accent)]">reliably</span>.
+            </p>
+          </MotionWrapper>
 
-              {/* Separator */}
-              <div
-                className="mb-4 h-px w-12 transition-all duration-500 group-hover:w-full"
-                style={{ backgroundColor: 'var(--color-accent)' }}
-              />
+          <MotionWrapper preset="slideUp" delay={0.3}>
+            <p className="mt-4 text-body-lg leading-relaxed text-[var(--fg-secondary)]">
+              Every project I take on is an opportunity to push boundaries. I combine
+              modern tooling with timeless engineering principles to deliver experiences
+              that users love and developers can maintain.
+            </p>
+          </MotionWrapper>
 
-              {/* Description */}
-              <p
-                className="text-base leading-relaxed"
-                style={{ color: 'var(--color-text-secondary)' }}
-              >
-                {value.description}
-              </p>
+          {/* Subtle code block */}
+          <MotionWrapper preset="slideUp" delay={0.45}>
+            <div className="mt-8 overflow-hidden rounded-card-sm border border-[var(--border-subtle)] bg-[var(--bg-tertiary)] p-4">
+              <pre className="font-mono text-caption leading-relaxed text-[var(--fg-muted)]">
+                <code>
+                  <span className="text-green-400">const</span>{' '}
+                  <span className="text-[var(--fg-primary)]">developer</span> ={' '}
+                  {'{\n'}
+                  {'  '}name: <span className="text-green-300">&quot;Hossam Hassan&quot;</span>,{'\n'}
+                  {'  '}passion: <span className="text-green-300">&quot;building great UX&quot;</span>,{'\n'}
+                  {'  '}motto: <span className="text-green-300">&quot;Ship it, but ship it right&quot;</span>{'\n'}
+                  {'}'};
+                </code>
+              </pre>
             </div>
-          ))}
+          </MotionWrapper>
         </div>
+
+        {/* Right: Principle cards */}
+        <MotionWrapper
+          stagger={{ amount: 0.12, delayChildren: 0.2 }}
+          className="grid gap-4 sm:grid-cols-2"
+        >
+          {principles.map(({ icon: Icon, title, description, accent }) => (
+            <motion.div key={title} variants={presets.staggerItem}>
+              <GlassCard hover="lift" padding="md" className="h-full">
+                <div
+                  className={`mb-4 inline-flex h-10 w-10 items-center justify-center rounded-card-sm bg-gradient-to-br ${accent}`}
+                >
+                  <Icon className="h-5 w-5 text-white" />
+                </div>
+                <h3 className="text-heading-md font-semibold text-[var(--fg-primary)]">
+                  {title}
+                </h3>
+                <p className="mt-2 text-body-sm leading-relaxed text-[var(--fg-muted)]">
+                  {description}
+                </p>
+              </GlassCard>
+            </motion.div>
+          ))}
+        </MotionWrapper>
       </div>
     </section>
   );
-}
+};
+
+export const PhilosophySection = memo(PhilosophySectionComponent);

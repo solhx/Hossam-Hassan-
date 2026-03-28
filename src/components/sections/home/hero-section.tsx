@@ -1,298 +1,186 @@
-// src/components/sections/home/hero-section.tsx
 'use client';
+// src/components/sections/home/hero-section.tsx
+// ─── Cinematic Hero Section ───
 
-import React, { useRef, useEffect, useState } from 'react';
-import { gsap, gsapEase, duration as dur, stagger as stag } from '@/systems/animation';
-import { motion, AnimatePresence } from 'framer-motion';
-import { AnimatedButton } from '@/components/ui/animated-button';
-import { useReducedMotion, useViewportSize } from '@/hooks';
-import { ArrowDown } from 'lucide-react';
-import { SceneProvider } from '@/components/three/scene-provider';
 
-export function HeroSection() {
-  const sectionRef = useRef<HTMLElement>(null);
-  const prefersReducedMotion = useReducedMotion();
-  const { isMobile } = useViewportSize();
-  const [isReady, setIsReady] = useState(false);
+import { useRef, useEffect, memo } from 'react';
+import { motion, useScroll, useTransform } from 'framer-motion';
+import * as presets from '@/systems/animation/presets';
+import LazyHeroScene from '@/components/three/lazy-hero-scene';
+import { AnimatedButton } from '@/components/ui/animated-btn';
+import { MagneticElement } from '@/components/ui/magnetic-element';
+import { ArrowDown, FileText, MessageSquare } from 'lucide-react';
 
-  useEffect(() => {
-    if (!sectionRef.current || prefersReducedMotion) {
-      setIsReady(true);
-      return;
-    }
+const HeroSectionComponent = () => {
+  const containerRef = useRef<HTMLElement>(null);
 
-    const ctx = gsap.context(() => {
-      const master = gsap.timeline({
-        delay: 3, // After preloader
-        onComplete: () => setIsReady(true),
-      });
+  // Parallax on scroll
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ['start start', 'end start'],
+  });
 
-      // ── Phase 1: Background ambient ──
-      master.from('.hero-bg-gradient', {
-        opacity: 0,
-        scale: 1.2,
-        duration: dur.cinematic,
-        ease: gsapEase.cinematic,
-      });
-
-      // ── Phase 2: Overline slides in ──
-      master.from(
-        '.hero-overline',
-        {
-          x: -40,
-          opacity: 0,
-          duration: dur.medium,
-          ease: gsapEase.smooth,
-        },
-        '-=1.5'
-      );
-
-      // ── Phase 3: Name reveals character by character ──
-      master.from(
-        '.hero-name .split-char',
-        {
-          y: 150,
-          rotateX: -80,
-          opacity: 0,
-          duration: dur.slow,
-          stagger: stag.text.chars,
-          ease: gsapEase.cinematic,
-          transformOrigin: '0% 50% -50',
-        },
-        '-=1'
-      );
-
-      // ── Phase 4: Role text fades in ──
-      master.from(
-        '.hero-role',
-        {
-          y: 40,
-          opacity: 0,
-          duration: dur.medium,
-          ease: gsapEase.smooth,
-        },
-        '-=0.5'
-      );
-
-      // ── Phase 5: Description paragraph ──
-      master.from(
-        '.hero-description',
-        {
-          y: 30,
-          opacity: 0,
-          duration: dur.normal,
-          ease: gsapEase.smooth,
-        },
-        '-=0.3'
-      );
-
-      // ── Phase 6: CTA buttons stagger in ──
-      master.from(
-        '.hero-cta > *',
-        {
-          y: 30,
-          opacity: 0,
-          duration: dur.normal,
-          stagger: 0.15,
-          ease: gsapEase.smooth,
-        },
-        '-=0.2'
-      );
-
-      // ── Phase 7: Scroll indicator ──
-      master.from(
-        '.hero-scroll-indicator',
-        {
-          opacity: 0,
-          y: -20,
-          duration: dur.normal,
-          ease: gsapEase.smooth,
-        },
-        '-=0.1'
-      );
-
-      // ── Scroll parallax on the entire hero ──
-      gsap.to('.hero-content', {
-        yPercent: 30,
-        opacity: 0,
-        ease: 'none',
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: 'top top',
-          end: 'bottom top',
-          scrub: true,
-        },
-      });
-
-      // Background parallax (slower)
-      gsap.to('.hero-bg-gradient', {
-        yPercent: 15,
-        ease: 'none',
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: 'top top',
-          end: 'bottom top',
-          scrub: true,
-        },
-      });
-    }, sectionRef);
-
-    return () => ctx.revert();
-  }, [prefersReducedMotion]);
-
-  // Helper to split name into chars
-  const splitName = (name: string) => {
-    return name.split('').map((char, i) => (
-      <span
-        key={i}
-        className="split-char inline-block"
-        style={{ willChange: 'transform, opacity' }}
-      >
-        {char === ' ' ? '\u00A0' : char}
-      </span>
-    ));
-  };
+  const heroY = useTransform(scrollYProgress, [0, 1], ['0%', '30%']);
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.6], [1, 0]);
+  const scaleProgress = useTransform(scrollYProgress, [0, 0.8], [1, 0.9]);
 
   return (
     <section
-      ref={sectionRef}
+      ref={containerRef}
       id="hero"
-      className="relative flex min-h-screen items-center overflow-hidden"
+      className="relative flex min-h-[100dvh] items-center justify-center overflow-hidden"
+      aria-label="Hero introduction"
     >
-      <SceneProvider 
-  scene="particles" 
-  fallback={
-    <div className="hero-bg-gradient absolute inset-0 -z-10">
-      {/* Static gradient fallback for mobile/reduced motion */}
+      {/* 3D Background */}
+      <LazyHeroScene />
+
+      {/* Gradient overlays for depth */}
       <div
-        className="absolute left-1/4 top-1/4 h-[500px] w-[500px] rounded-full opacity-20 blur-[120px]"
-        style={{
-          background:
-            'radial-gradient(circle, rgba(var(--color-accent-rgb), 0.4) 0%, transparent 70%)',
-        }}
+        className="absolute inset-0 -z-[5] bg-gradient-to-b from-transparent via-transparent to-[var(--bg-primary)]"
+        aria-hidden="true"
       />
-    </div>
-  } 
-/>
-      {/* ── Background ── */}
-      <div className="hero-bg-gradient absolute inset-0 -z-10">
-        {/* Gradient orbs */}
-        <div
-          className="absolute left-1/4 top-1/4 h-[500px] w-[500px] rounded-full opacity-20 blur-[120px]"
-          style={{
-            background:
-              'radial-gradient(circle, rgba(var(--color-accent-rgb), 0.4) 0%, transparent 70%)',
-          }}
-        />
-        <div
-          className="absolute bottom-1/4 right-1/4 h-[400px] w-[400px] rounded-full opacity-15 blur-[100px]"
-          style={{
-            background:
-              'radial-gradient(circle, rgba(168, 85, 247, 0.3) 0%, transparent 70%)',
-          }}
-        />
-        {/* Grid pattern */}
-        <div
-          className="absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage:
-              'linear-gradient(var(--color-text-primary) 1px, transparent 1px), linear-gradient(90deg, var(--color-text-primary) 1px, transparent 1px)',
-            backgroundSize: '100px 100px',
-          }}
-        />
-      </div>
+      <div
+        className="absolute inset-0 -z-[5] bg-[radial-gradient(ellipse_at_center,transparent_0%,var(--bg-primary)_70%)]"
+        aria-hidden="true"
+      />
 
-      {/* ── Content ── */}
-      <div className="hero-content container-main relative z-10 w-full py-32">
-        <div className="max-w-5xl">
-          {/* Overline */}
-          <div className="hero-overline mb-6 flex items-center gap-4">
-            <div
-              className="h-px w-12"
-              style={{ backgroundColor: 'var(--color-accent)' }}
-            />
-            <span className="text-overline" style={{ color: 'var(--color-accent)' }}>
-              MEARN Stack Developer
+      {/* Content */}
+      <motion.div
+        style={{ y: heroY, opacity: heroOpacity, scale: scaleProgress }}
+        className="relative z-10 mx-auto max-w-5xl px-[var(--container-px)] text-center"
+      >
+        {/* Status badge */}
+        <motion.div
+          variants={presets.fadeIn}
+          initial="hidden"
+          animate="visible"
+          transition={{ delay: 0.8 }}
+          className="mb-8 inline-flex items-center gap-2 rounded-full border border-[var(--border-accent)] bg-[var(--bg-elevated)] px-4 py-2 backdrop-blur-md"
+        >
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
+          </span>
+          <span className="text-body-sm font-medium text-[var(--fg-secondary)]">
+            Available for work
+          </span>
+        </motion.div>
+
+        {/* Main headline */}
+        <motion.div
+          variants={presets.staggerContainer(0.08, 0.6)}
+          initial="hidden"
+          animate="visible"
+          className="overflow-hidden"
+        >
+          <motion.h1 variants={presets.staggerItem} className="text-display-2xl font-extrabold tracking-tighter">
+            <span className="block text-[var(--fg-primary)]">
+              Hossam
             </span>
-          </div>
-
-          {/* Name */}
-          <h1 className="hero-name text-display-xl mb-6">
-            <span className="block overflow-hidden">
-              {splitName('Hossam')}
+            <span className="block gradient-green-text">
+              Hassan
             </span>
-            <span className="block overflow-hidden">
-              {splitName('Hassan')}
-            </span>
-          </h1>
+          </motion.h1>
+        </motion.div>
 
-          {/* Role description */}
-          <p
-            className="hero-role text-display-sm mb-8 max-w-2xl font-light"
-            style={{ color: 'var(--color-text-secondary)' }}
-          >
-            I craft exceptional digital experiences with{' '}
-            <span style={{ color: 'var(--color-accent)' }}>React</span>,{' '}
-            <span style={{ color: 'var(--color-accent)' }}>Next.js</span>, and{' '}
-            <span style={{ color: 'var(--color-accent)' }}>Node.js</span>
-          </p>
+        {/* Subtitle */}
+        <motion.p
+          variants={presets.blurIn}
+          initial="hidden"
+          animate="visible"
+          transition={{ delay: 1.2 }}
+          className="mx-auto mt-6 max-w-2xl text-body-lg leading-relaxed text-[var(--fg-secondary)]"
+        >
+          Full Stack{' '}
+          <span className="font-semibold text-[var(--fg-accent)]">MERN</span>{' '}
+          Developer crafting high-performance web experiences with{' '}
+          <span className="font-mono text-body-sm font-medium text-[var(--fg-accent)]">
+            React
+          </span>
+          ,{' '}
+          <span className="font-mono text-body-sm font-medium text-[var(--fg-accent)]">
+            Next.js
+          </span>
+          , and{' '}
+          <span className="font-mono text-body-sm font-medium text-[var(--fg-accent)]">
+            TypeScript
+          </span>
+          .
+        </motion.p>
 
-          {/* Description */}
-          <p
-            className="hero-description mb-12 max-w-xl text-lg leading-relaxed"
-            style={{ color: 'var(--color-text-tertiary)' }}
-          >
-            Building performant, accessible, and beautifully animated web
-            applications with 3+ years of full-stack expertise.
-          </p>
-
-          {/* CTAs */}
-          <div className="hero-cta flex flex-wrap items-center gap-4">
+        {/* CTA Buttons */}
+        <motion.div
+          variants={presets.slideUp}
+          initial="hidden"
+          animate="visible"
+          transition={{ delay: 1.6 }}
+          className="mt-10 flex flex-wrap items-center justify-center gap-4"
+        >
+          <MagneticElement strength={0.3}>
             <AnimatedButton
               href="#showcase"
               variant="primary"
               size="lg"
-              icon={<ArrowDown size={18} />}
+              icon={<MessageSquare className="h-4 w-4" />}
             >
               View My Work
             </AnimatedButton>
-            <AnimatedButton href="#connect" variant="outline" size="lg">
-              Get In Touch
-            </AnimatedButton>
-          </div>
-        </div>
-      </div>
+          </MagneticElement>
 
-      {/* ── Scroll Indicator ── */}
+          <MagneticElement strength={0.3}>
+            <AnimatedButton
+              href="/Hossam-Hassan-Resume.pdf"
+              variant="ghost"
+              size="lg"
+              icon={<FileText className="h-4 w-4" />}
+              external
+            >
+              Resume
+            </AnimatedButton>
+          </MagneticElement>
+        </motion.div>
+
+        {/* Tech stack pills */}
+        <motion.div
+          variants={presets.staggerContainer(0.05, 2)}
+          initial="hidden"
+          animate="visible"
+          className="mt-16 flex flex-wrap items-center justify-center gap-2"
+        >
+          {['React', 'Next.js', 'TypeScript', 'Node.js', 'MongoDB', 'Tailwind CSS'].map(
+            (tech) => (
+              <motion.span
+                key={tech}
+                variants={presets.staggerItem}
+                className="rounded-full border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-3 py-1 font-mono text-caption text-[var(--fg-muted)] backdrop-blur-sm transition-colors duration-300 hover:border-[var(--border-accent)] hover:text-[var(--fg-accent)]"
+              >
+                {tech}
+              </motion.span>
+            )
+          )}
+        </motion.div>
+      </motion.div>
+
+      {/* Scroll indicator */}
       <motion.div
-        className="hero-scroll-indicator absolute bottom-12 left-1/2 -translate-x-1/2"
-        animate={{ y: [0, 8, 0] }}
-        transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 2.5, duration: 0.8 }}
+        className="absolute bottom-8 left-1/2 -translate-x-1/2"
       >
-        <div className="flex flex-col items-center gap-3">
-          <span
-            className="text-overline"
-            style={{ color: 'var(--color-text-tertiary)', fontSize: '0.6rem' }}
-          >
-            SCROLL
+        <motion.div
+          animate={{ y: [0, 8, 0] }}
+          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+          className="flex flex-col items-center gap-2"
+        >
+          <span className="text-caption font-medium uppercase tracking-wider text-[var(--fg-muted)]">
+            Scroll
           </span>
-          <div
-            className="h-12 w-px"
-            style={{ backgroundColor: 'var(--color-border)' }}
-          >
-            <motion.div
-              className="w-full"
-              style={{ backgroundColor: 'var(--color-accent)' }}
-              animate={{ height: ['0%', '100%', '0%'] }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: 'easeInOut',
-              }}
-            />
-          </div>
-        </div>
+          <ArrowDown className="h-4 w-4 text-[var(--fg-accent)]" />
+        </motion.div>
       </motion.div>
     </section>
   );
-}
+};
+
+export const HeroSection = memo(HeroSectionComponent);

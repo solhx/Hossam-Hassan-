@@ -1,41 +1,146 @@
 // src/systems/animation/gsap-config.ts
-'use client';
+// ─── Centralized GSAP Configuration ───
 
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { SplitText } from 'gsap/SplitText'; // If you have Club license
-import { CustomEase } from 'gsap/CustomEase';
 
-// Register all plugins once
+// Register once
 if (typeof window !== 'undefined') {
-  gsap.registerPlugin(ScrollTrigger, CustomEase);
+  gsap.registerPlugin(ScrollTrigger);
+}
 
-  // If you have GSAP Club/Business:
-  // gsap.registerPlugin(SplitText);
+// ─── Default GSAP Settings ───
+gsap.defaults({
+  ease: 'power3.out',
+  duration: 0.8,
+});
 
-  // Global GSAP defaults
-  gsap.defaults({
-    ease: 'power3.out',
-    duration: 0.8,
+// Custom ease registry
+export const gsapEasings = {
+  smooth:    'power2.inOut',
+  snappy:    'power3.out',
+  dramatic:  'power4.inOut',
+  elastic:   'elastic.out(1, 0.5)',
+  bounce:    'back.out(1.7)',
+  cinematic: 'expo.inOut',
+} as const;
+
+// ─── Reusable GSAP Animation Factories ───
+
+/** Create scroll-triggered fade-up animation */
+export function createScrollFadeUp(
+  element: string | Element,
+  options?: {
+    y?: number;
+    duration?: number;
+    delay?: number;
+    stagger?: number;
+    trigger?: string | Element;
+  }
+) {
+  const {
+    y = 60,
+    duration = 0.8,
+    delay = 0,
+    stagger = 0.1,
+    trigger,
+  } = options ?? {};
+
+  return gsap.from(element, {
+    y,
+    opacity: 0,
+    duration,
+    delay,
+    stagger,
+    ease: gsapEasings.snappy,
+    scrollTrigger: {
+      trigger: trigger ?? element,
+      start: 'top 85%',
+      end: 'bottom 20%',
+      toggleActions: 'play none none reverse',
+    },
   });
+}
 
-  // Custom eases for premium feel
-  CustomEase.create('smooth', '0.23, 1, 0.32, 1');        // Main ease
-  CustomEase.create('snappy', '0.16, 1, 0.3, 1');         // Quick and snappy
-  CustomEase.create('cinematic', '0.77, 0, 0.175, 1');    // Dramatic
-  CustomEase.create('bounce-out', '0.34, 1.56, 0.64, 1'); // Playful
-  CustomEase.create('expo-out', '0.19, 1, 0.22, 1');      // Expo feel
+/** Create horizontal scroll-triggered reveal */
+export function createScrollRevealX(
+  element: string | Element,
+  direction: 'left' | 'right' = 'left',
+  options?: {
+    distance?: number;
+    duration?: number;
+    trigger?: string | Element;
+  }
+) {
+  const {
+    distance = 80,
+    duration = 1,
+    trigger,
+  } = options ?? {};
 
-  // ScrollTrigger defaults
-  ScrollTrigger.defaults({
-    toggleActions: 'play none none none',
-    start: 'top 85%',
+  const x = direction === 'left' ? -distance : distance;
+
+  return gsap.from(element, {
+    x,
+    opacity: 0,
+    duration,
+    ease: gsapEasings.dramatic,
+    scrollTrigger: {
+      trigger: trigger ?? element,
+      start: 'top 80%',
+      toggleActions: 'play none none reverse',
+    },
   });
+}
 
-  // Refresh on load
-  window.addEventListener('load', () => {
-    ScrollTrigger.refresh();
+/** Create parallax scroll effect (GPU-friendly transform only) */
+export function createParallax(
+  element: string | Element,
+  speed: number = 0.5,
+  trigger?: string | Element,
+) {
+  return gsap.to(element, {
+    yPercent: speed * 30,
+    ease: 'none',
+    scrollTrigger: {
+      trigger: trigger ?? element,
+      start: 'top bottom',
+      end: 'bottom top',
+      scrub: 1, // Smooth scrub
+    },
   });
+}
+
+/** Create text split/reveal animation */
+export function createTextReveal(
+  element: string | Element,
+  options?: {
+    duration?: number;
+    stagger?: number;
+    trigger?: string | Element;
+  }
+) {
+  const { duration = 0.8, stagger = 0.03, trigger } = options ?? {};
+
+  return gsap.from(element, {
+    yPercent: 110,
+    opacity: 0,
+    duration,
+    stagger,
+    ease: gsapEasings.cinematic,
+    scrollTrigger: {
+      trigger: trigger ?? element,
+      start: 'top 85%',
+      toggleActions: 'play none none reverse',
+    },
+  });
+}
+
+/** Batch cleanup for all ScrollTriggers in a scope */
+export function cleanupScrollTriggers(scope?: string | Element) {
+  ScrollTrigger.getAll()
+    .filter(st => !scope || st.vars.trigger === scope)
+    .forEach(st => st.kill());
 }
 
 export { gsap, ScrollTrigger };

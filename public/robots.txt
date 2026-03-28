@@ -1,9 +1,7 @@
-# *
+# Robots.txt for hossamhassan.dev
 User-agent: *
 Allow: /
+Disallow: /api/
+Disallow: /_next/
 
-# Host
-Host: https://kerolos-magdy-portfolio.vercel.app/
-
-# Sitemaps
-Sitemap: https://kerolos-magdy-portfolio.vercel.app/sitemap.xml
+Sitemap: https://hossamhassan.dev/sitemap.xml

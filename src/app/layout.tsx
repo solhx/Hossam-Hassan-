@@ -1,55 +1,55 @@
 // src/app/layout.tsx
-import type { Metadata } from 'next';
-import { ThemeProvider } from 'next-themes';
+// ─── Root Layout: Server Component with Client Providers ───
+
+import type { Metadata, Viewport } from 'next';
+import { Inter, JetBrains_Mono } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
-import { CursorProvider } from '@/components/core/cursor/cursor-provider';
-import { CursorFollower } from '@/components/core/cursor/cursor-follower';
-import { SmoothScroll } from '@/components/core/smooth-scroll';
-import { NoiseOverlay } from '@/components/core/noise-overlay';
-import  Navigation  from '@/components/core/floating-app-bar';
-import { Footer } from '@/components/core/footer';
-import { ChatWidget } from '@/components/chat';
+import { Providers } from '@/components/core/providers';
 import './globals.css';
 
+// ─── Font Optimization: Self-hosted, subset, swap ───
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
+  preload: true,
+  fallback: ['-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-mono',
+  preload: false,   // Secondary font, don't preload
+  fallback: ['Fira Code', 'monospace'],
+});
+
+// ─── Enhanced Metadata ───
 export const metadata: Metadata = {
   metadataBase: new URL('https://hossamhassan.dev'),
   title: {
-    default: 'Hossam Hassan — MEARN Stack Developer',
+    default: 'Hossam Hassan — Full Stack Developer',
     template: '%s | Hossam Hassan',
   },
   description:
-    'Full-stack MEARN developer with 3+ years of experience building performant, accessible, and beautifully animated web applications with React, Next.js, Node.js, and MongoDB.',
+    'Full Stack MERN Developer with 3+ years of experience building high-performance web applications. Expert in React, Next.js, Node.js, and TypeScript.',
   keywords: [
     'Hossam Hassan',
-    'MEARN Stack',
     'Full Stack Developer',
+    'MERN Stack',
     'React Developer',
     'Next.js Developer',
-    'Node.js Developer',
+    'TypeScript',
+    'Node.js',
+    'MongoDB',
     'Portfolio',
     'Web Developer',
-    'Egypt',
+    'Frontend Engineer',
   ],
   authors: [{ name: 'Hossam Hassan', url: 'https://hossamhassan.dev' }],
   creator: 'Hossam Hassan',
-  openGraph: {
-    type: 'website',
-    locale: 'en_US',
-    url: 'https://hossamhassan.dev',
-    title: 'Hossam Hassan — MEARN Stack Developer',
-    description:
-      'Full-stack developer crafting exceptional digital experiences.',
-    siteName: 'Hossam Hassan Portfolio',
-    images: [{ url: '/og-image.webp', width: 1200, height: 630 }],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Hossam Hassan — MEARN Stack Developer',
-    description:
-      'Full-stack developer crafting exceptional digital experiences.',
-    images: ['/og-image.webp'],
-  },
+  publisher: 'Hossam Hassan',
   robots: {
     index: true,
     follow: true,
@@ -61,33 +61,76 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: 'https://hossamhassan.dev',
+    siteName: 'Hossam Hassan Portfolio',
+    title: 'Hossam Hassan — Full Stack Developer',
+    description:
+      'Full Stack MERN Developer crafting high-performance web experiences with React, Next.js, and TypeScript.',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'Hossam Hassan — Full Stack Developer Portfolio',
+        type: 'image/png',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Hossam Hassan — Full Stack Developer',
+    description:
+      'Full Stack MERN Developer crafting high-performance web experiences.',
+    images: ['/og-image.png'],
+    creator: '@hossamhassan',
+  },
+  alternates: {
+    canonical: 'https://hossamhassan.dev',
+  },
+  other: {
+    'msapplication-TileColor': '#059669',
+  },
 };
 
-// JSON-LD structured data
-const jsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'Person',
-  name: 'Hossam Hassan',
-  url: 'https://hossamhassan.dev',
-  email: 'hossamhassan112003@gmail.com',
-  telephone: '+201022828316',
-  jobTitle: 'MEARN Stack Developer',
-  sameAs: [
-    'https://github.com/hossamhassan',
-    'https://linkedin.com/in/hossamhassan',
+export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#0a0f0d' },
   ],
-  knowsAbout: [
-    'React',
-    'Next.js',
-    'Node.js',
-    'Express.js',
-    'MongoDB',
-    'TypeScript',
-    'Tailwind CSS',
-    'GSAP',
-    'Three.js',
-  ],
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
 };
+
+// ─── JSON-LD Structured Data ───
+function JsonLd() {
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    name: 'Hossam Hassan',
+    url: 'https://hossamhassan.dev',
+    jobTitle: 'Full Stack Developer',
+    description: 'Full Stack MERN Developer with 3+ years of experience.',
+    sameAs: [
+      'https://github.com/hossamhassan',
+      'https://linkedin.com/in/hossamhassan',
+    ],
+    knowsAbout: [
+      'React', 'Next.js', 'TypeScript', 'Node.js', 'MongoDB',
+      'Express.js', 'Tailwind CSS', 'JavaScript',
+    ],
+  };
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+    />
+  );
+}
 
 export default function RootLayout({
   children,
@@ -95,52 +138,27 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html
+      lang="en"
+      className={`${inter.variable} ${jetbrainsMono.variable}`}
+      suppressHydrationWarning
+    >
       <head>
-        <link rel="icon" href="/fav.webp" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-        />
+        <JsonLd />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="manifest" href="/manifest.json" />
       </head>
-      <body>
-        <a
-  href="#main-content"
-  className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[10001] focus:rounded-lg focus:bg-[var(--color-accent)] focus:px-4 focus:py-2 focus:text-white focus:outline-none"
->
-  Skip to main content
-</a>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          enableSystem
-          disableTransitionOnChange={false}
-        >
-          <CursorProvider>
-            <SmoothScroll>
-              {/* Global layers */}
-              <NoiseOverlay />
-              <CursorFollower />
-              <Navigation />
+      <body className="font-body antialiased">
+        <Providers>
+          {children}
+        </Providers>
 
-              {/* Page content */}
-              <main id="main-content">{children}</main>
+        {/* Noise overlay for cinematic texture */}
+        <div className="noise-overlay" aria-hidden="true" />
 
-              {/* Footer */}
-              <Footer />
-
-              {/* Chat widget */}
-              <ChatWidget />
-            </SmoothScroll>
-          </CursorProvider>
-        </ThemeProvider>
-
+        {/* Analytics (lazy-loaded) */}
         <Analytics />
         <SpeedInsights />
       </body>
